@@ -2,6 +2,8 @@
 
 Go module that simplifies the integration of OAuth2 authorization flow and token storage into a [Cobra CLI](https://github.com/spf13/cobra). This library provides prebuilt commands for handling login and token management, making it easy to integrate secure authentication into your CLI applications.
 
+![Demo](./demo.gif)
+
 ---
 
 ## Features
