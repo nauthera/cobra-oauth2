@@ -87,3 +87,25 @@ to quickly create a Cobra application.`,
 			cmd.Print(token)
 		}}
 }
+
+func NewLogoutCommand(options ...Option) *cobra.Command {
+	return &cobra.Command{
+		Use: "logout",
+		Run: func(cmd *cobra.Command, args []string) {
+			authConfig, err := configure(options...)
+			if err != nil {
+				cmd.PrintErr("error configuring auth: ", err)
+				return
+			}
+
+			storageProvider := storage.NewKeyringStorage(authConfig.ClientId)
+			err = storageProvider.DeleteToken()
+			if err != nil {
+				cmd.PrintErr("error logging out: ", err)
+				os.Exit(1)
+			}
+
+			cmd.Println("Successfully logged out.")
+		},
+	}
+}

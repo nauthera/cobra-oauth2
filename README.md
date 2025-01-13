@@ -1,6 +1,6 @@
 # Cobra-OAuth2
 
-Go module that simplifies the integration of OAuth2 authorization flow and token storage into a [Cobra CLI](https://github.com/spf13/cobra). This library provides prebuilt commands for handling login and token management, making it easy to integrate secure authentication into your CLI applications.
+Go module that simplifies the integration of OAuth2 authorization flow and token storage into a [Cobra CLI](https://github.com/spf13/cobra). This library provides prebuilt commands for handling login, logout and token management, making it easy to integrate secure authentication into your CLI applications.
 
 ![Demo](./demo.gif)
 
@@ -11,7 +11,7 @@ Go module that simplifies the integration of OAuth2 authorization flow and token
 - **Quick Setup**: Add OAuth2 support to your Cobra CLI with just a few lines of code.
 - **Token Management**: Automatically handle token storage and retrieval.
 - **Flexible Storage Providers**: Store tokens securely using your preferred storage backend (e.g., keyring, file system).
-- **Prebuilt Commands**: Includes `login` and `token` commands to handle authentication flows out of the box.
+- **Prebuilt Commands**: Includes `login`, `logout` and `token` commands to handle authentication flows out of the box.
 
 ---
 
@@ -91,6 +91,7 @@ func init() {
 	rootCmd.AddCommand(
 		auth.NewLoginCommand(options...),
 		auth.NewTokenCommand(options...),
+		auth.NewLogoutCommand(options...),
 	)
 }
 ```
@@ -99,6 +100,7 @@ func init() {
 
 - **`login`**: Initiates the OAuth2 login flow.
 - **`token`**: Fetches and displays the current access token.
+- **`logout`**: Clears the stored token.
 
 ---
 

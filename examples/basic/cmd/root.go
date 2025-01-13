@@ -64,5 +64,6 @@ func init() {
 	rootCmd.AddCommand(
 		auth.NewLoginCommand(options...),
 		auth.NewTokenCommand(options...),
+		auth.NewLogoutCommand(options...),
 	)
 }
