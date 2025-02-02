@@ -31,6 +31,11 @@ func FetchDeviceCode(ctx context.Context, config Config) (*DeviceAuthResponse, e
 		"scope":     joinScopes(config.Scopes),
 	}
 
+	// Add optional audience
+	if config.Audience != "" {
+		payload["audience"] = config.Audience
+	}
+
 	// Add optional client secret
 	if config.ClientSecret != "" {
 		payload["client_secret"] = config.ClientSecret
