@@ -64,8 +64,14 @@ func WithDiscoveryURL(discoveryURL url.URL) Option {
 		panic(fmt.Errorf("failed to fetch OAuth2 metadata: %w", err))
 	}
 
+	// if device authorization endpoint is empty fallback to authorization url
+	deviceAuthorizationEndpoint := metadata.DeviceAuthorizationEndpoint
+	if deviceAuthorizationEndpoint == "" {
+		deviceAuthorizationEndpoint = metadata.AuthorizationEndpoint
+	}
+
 	return func(c *Config) {
-		c.DeviceAuthorizationEndpoint = metadata.DeviceAuthorizationEndpoint
+		c.DeviceAuthorizationEndpoint = deviceAuthorizationEndpoint
 		c.TokenEndpoint = metadata.TokenEndpoint
 	}
 }
