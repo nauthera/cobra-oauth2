@@ -32,5 +32,8 @@ func Handle(cmd cobra.Command, verificationURIComplete string) {
 	time.Sleep(2 * time.Second)
 
 	// open browser with verificationURIComplete if possible
-	browser.OpenURL(verificationURIComplete)
+	if err := browser.OpenURL(verificationURIComplete); err != nil {
+		cmd.Println("Failed to open browser. Please navigate to the following URL manually:")
+		cmd.Printf("  %s\n", verificationURIComplete)
+	}
 }

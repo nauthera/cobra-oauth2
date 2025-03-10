@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/zalando/go-keyring"
+	keyring "github.com/zalando/go-keyring"
 )
 
 type keyringStorageProvider struct {

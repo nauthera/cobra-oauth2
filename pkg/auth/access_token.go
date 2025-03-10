@@ -20,9 +20,9 @@ type AccessTokenResponse struct {
 func PollForAccessToken(ctx context.Context, config Config, deviceCode string, timeout time.Duration, interval time.Duration) (*AccessTokenResponse, error) {
 	// Serialize the payload to form-encoded format
 	payload := url.Values{
-		"client_id":   {config.ClientId},
-		"device_code": {deviceCode},
-		"grant_type":  {"urn:ietf:params:oauth:grant-type:device_code"},
+		"client_id":   []string{config.ClientId},
+		"device_code": []string{deviceCode},
+		"grant_type":  []string{"urn:ietf:params:oauth:grant-type:device_code"},
 	}
 
 	if config.ClientSecret != "" {
@@ -32,7 +32,7 @@ func PollForAccessToken(ctx context.Context, config Config, deviceCode string, t
 	// Execute the HTTP request
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	var resp *http.Response

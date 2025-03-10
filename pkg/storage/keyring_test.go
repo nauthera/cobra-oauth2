@@ -16,7 +16,8 @@ func TestGetToken(t *testing.T) {
 	t.Run("Token found", func(t *testing.T) {
 		expectedToken := "testToken"
 		keyring.MockInit()
-		keyring.Set(service, service, expectedToken)
+		err := keyring.Set(service, service, expectedToken)
+		assert.NoError(t, err)
 
 		token, err := provider.GetToken()
 		assert.NoError(t, err)
@@ -48,9 +49,10 @@ func TestDeleteToken(t *testing.T) {
 
 	t.Run("Delete token successfully", func(t *testing.T) {
 		keyring.MockInit()
-		keyring.Set(service, service, "testToken")
+		err := keyring.Set(service, service, "testToken")
+		assert.NoError(t, err)
 
-		err := provider.DeleteToken()
+		err = provider.DeleteToken()
 		assert.NoError(t, err)
 
 		_, err = keyring.Get(service, service)
