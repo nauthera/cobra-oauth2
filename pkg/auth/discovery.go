@@ -22,10 +22,23 @@ type AuthorizationServerMetadataResponse struct {
 	DeviceAuthorizationEndpoint                string   `json:"device_authorization_endpoint"`
 }
 
+// FetchConfigFromDiscoveryURL retrieves the authorization server metadata from the given discovery URL.
+// It sends an HTTP GET request to the discovery URL and decodes the JSON response into an AuthorizationServerMetadataResponse struct.
+//
+// Parameters:
+//   - discoveryURL: The URL from which to fetch the authorization server metadata.
+//
+// Returns:
+//   - A pointer to an AuthorizationServerMetadataResponse struct containing the metadata.
+//   - An error if the HTTP request fails or the response cannot be decoded.
 func FetchConfigFromDiscoveryURL(discoveryURL url.URL) (*AuthorizationServerMetadataResponse, error) {
 	response, err := http.Get(discoveryURL.String())
 	if err != nil {
 		return nil, err
+	}
+
+	if response.StatusCode >= 400 {
+		return nil, ErrInvalidResponse
 	}
 
 	var metadata AuthorizationServerMetadataResponse

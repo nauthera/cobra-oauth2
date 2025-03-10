@@ -51,6 +51,12 @@ func WithDeviceAuthorizationEndpoint(deviceAuthorizationEndpoint string) Option 
 	}
 }
 
+func WithTokenEndpoint(tokenEndpoint string) Option {
+	return func(c *Config) {
+		c.TokenEndpoint = tokenEndpoint
+	}
+}
+
 func WithScopes(scopes []string) Option {
 	return func(c *Config) {
 		c.Scopes = scopes
