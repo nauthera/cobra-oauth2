@@ -10,7 +10,6 @@ jobs:
   test:
     name: Test 🧪
     runs-on: ubuntu-latest
-    needs: setup
     permissions:
       contents: read
       checks: write
@@ -29,7 +28,6 @@ jobs:
   lint:
     name: Lint 🎨
     runs-on: ubuntu-latest
-    needs: setup
     permissions:
       contents: read
       checks: write
