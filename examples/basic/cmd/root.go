@@ -34,7 +34,8 @@ const CLIENT_ID = "my-client-id"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use: "cobra-oauth2",
+	Use:   "cobra-oauth2",
+	Short: "A simple CLI tool to demonstrate OAuth2 login and token retrieval.",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
