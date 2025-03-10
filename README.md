@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/nauthera/cobra-oauth2/graph/badge.svg?token=1YL51YPR2K)](https://codecov.io/gh/nauthera/cobra-oauth2)
+
 # Cobra-OAuth2
 
 Go module that simplifies the integration of OAuth2 authorization flow and token storage into a [Cobra CLI](https://github.com/spf13/cobra). This library provides prebuilt commands for handling login, logout and token management, making it easy to integrate secure authentication into your CLI applications.
