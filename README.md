@@ -1,3 +1,4 @@
+[![CI 🚧](https://github.com/nauthera/cobra-oauth2/actions/workflows/ci.yaml/badge.svg)](https://github.com/nauthera/cobra-oauth2/actions/workflows/ci.yaml)
 [![codecov](https://codecov.io/gh/nauthera/cobra-oauth2/graph/badge.svg?token=1YL51YPR2K)](https://codecov.io/gh/nauthera/cobra-oauth2)
 
 # Cobra-OAuth2

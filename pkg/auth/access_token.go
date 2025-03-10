@@ -30,7 +30,7 @@ func PollForAccessToken(ctx context.Context, config Config, deviceCode string, t
 	}
 
 	// Execute the HTTP request
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := &http.Client{Timeout: 15 * time.Second}
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
