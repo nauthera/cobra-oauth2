@@ -48,7 +48,7 @@ func Execute() {
 }
 
 func init() {
-	discoveryUrl, err := url.Parse("https://foo-bar.nauthera.io/.well-known/openid-configuration")
+	discoveryUrl, err := url.Parse("https://example.nauthera.io/.well-known/openid-configuration")
 	if err != nil {
 		rootCmd.PrintErr("error parsing discovery URL: ", err)
 		return
