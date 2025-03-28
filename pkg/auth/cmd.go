@@ -25,23 +25,37 @@ code to authenticate the CLI tool.
 				return
 			}
 
-			deviceCode, err := FetchDeviceCode(cmd.Context(), *authConfig)
-			if err != nil {
-				cmd.PrintErr("error fetching device code: ", err)
-				return
-			}
+			var accessToken *AccessTokenResponse
 
-			Handle(*cmd, deviceCode.VerificationURIComplete)
+			switch authConfig.GrantType {
+			case DeviceCode:
+				deviceCode, err := FetchDeviceCode(cmd.Context(), *authConfig)
+				if err != nil {
+					cmd.PrintErr("error fetching device code: ", err)
+					return
+				}
 
-			accessToken, err := PollForAccessToken(
-				cmd.Context(),
-				*authConfig,
-				deviceCode.DeviceCode,
-				time.Duration(deviceCode.ExpiresIn)*time.Second,
-				time.Duration(deviceCode.Interval)*time.Second,
-			)
-			if err != nil {
-				cmd.PrintErr("error polling for access token: ", err)
+				Handle(*cmd, deviceCode.VerificationURIComplete)
+
+				accessToken, err = PollForAccessToken(
+					cmd.Context(),
+					*authConfig,
+					deviceCode.DeviceCode,
+					time.Duration(deviceCode.ExpiresIn)*time.Second,
+					time.Duration(deviceCode.Interval)*time.Second,
+				)
+				if err != nil {
+					cmd.PrintErr("error polling for access token: ", err)
+					return
+				}
+			case ClientCredentials:
+				accessToken, err = FetchClientCredentialsToken(cmd.Context(), *authConfig)
+				if err != nil {
+					cmd.PrintErr("error fetching access token: ", err)
+					return
+				}
+			default:
+				cmd.PrintErr("unsupported grant type: ", authConfig.GrantType)
 				return
 			}
 

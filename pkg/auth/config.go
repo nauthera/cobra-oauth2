@@ -13,13 +13,14 @@ type Option func(*Config)
 
 // Config defines the configuration for OAuth2 device flow.
 type Config struct {
-	ClientId                    string                  `json:"client_id" validate:"required"`
-	ClientSecret                string                  `json:"client_secret,omitempty"`
-	DeviceAuthorizationEndpoint string                  `json:"auth_url" validate:"required,url"`
-	TokenEndpoint               string                  `json:"token_url" validate:"required,url"`
-	Scopes                      []string                `json:"scopes" validate:"required,min=1,dive,required"`
-	Audience                    string                  `json:"audience,omitempty"`
-	StorageProvider             storage.StorageProvider `json:"-"` // not validated
+	ClientId                    string   `json:"client_id" validate:"required"`
+	ClientSecret                string   `json:"client_secret,omitempty"`
+	DeviceAuthorizationEndpoint string   `json:"auth_url" validate:"required,url"`
+	TokenEndpoint               string   `json:"token_url" validate:"required,url"`
+	Scopes                      []string `json:"scopes" validate:"required,min=1,dive,required"`
+	Audience                    string   `json:"audience,omitempty"`
+	StorageProvider             storage.StorageProvider
+	GrantType                   GrantType `json:"grant_type"`
 }
 
 func (c Config) IsValid() error {
@@ -95,9 +96,16 @@ func WithStorageProvider(storageProvider storage.StorageProvider) Option {
 	}
 }
 
+func WithGrantType(grantType GrantType) Option {
+	return func(c *Config) {
+		c.GrantType = grantType
+	}
+}
+
 func configure(options ...Option) (*Config, error) {
 	authConfig := &Config{
-		Scopes: strings.Split(DefaultScopes, " "),
+		Scopes:    strings.Split(DefaultScopes, " "),
+		GrantType: DefaultGrantType,
 	}
 
 	for _, opt := range options {

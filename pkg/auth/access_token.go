@@ -22,7 +22,7 @@ func PollForAccessToken(ctx context.Context, config Config, deviceCode string, t
 	payload := url.Values{
 		"client_id":   []string{config.ClientId},
 		"device_code": []string{deviceCode},
-		"grant_type":  []string{"urn:ietf:params:oauth:grant-type:device_code"},
+		"grant_type":  []string{DeviceCode.String()},
 	}
 
 	if config.ClientSecret != "" {
