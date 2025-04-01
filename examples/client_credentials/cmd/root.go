@@ -30,8 +30,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var CLIENT_ID = "my-client-id"
-var CLIENT_SECRET = "my-client-secret"
+var CLIENT_ID string
+var CLIENT_SECRET string
+var discoveryUrl string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -49,17 +50,40 @@ func Execute() {
 }
 
 func init() {
-	discoveryUrl, err := url.Parse("https://example.nauthera.io/.well-known/openid-configuration")
+	rootCmd.PersistentFlags().StringVar(&discoveryUrl, "discoveryUrl", "", "The discovery URL for the OAuth2 provider")
+	rootCmd.PersistentFlags().StringVar(&CLIENT_ID, "clientId", "", "The client ID for the OAuth2 provider")
+	rootCmd.PersistentFlags().StringVar(&CLIENT_SECRET, "clientSecret", "", "The client secret for the OAuth2 provider")
+
+	cobra.OnInitialize(initConfig)
+}
+
+func initConfig() {
+	if discoveryUrl == "" {
+		rootCmd.PrintErr("discoveryUrl is required")
+		os.Exit(1)
+	}
+
+	if CLIENT_ID == "" {
+		rootCmd.PrintErr("clientId is required")
+		os.Exit(1)
+	}
+
+	if CLIENT_SECRET == "" {
+		rootCmd.PrintErr("clientSecret is required")
+		os.Exit(1)
+	}
+
+	parsedUrl, err := url.Parse(discoveryUrl)
 	if err != nil {
 		rootCmd.PrintErr("error parsing discovery URL: ", err)
-		return
+		os.Exit(1)
 	}
 
 	storageProvider := storage.NewKeyringStorage(CLIENT_ID)
 
 	grantType := auth.ClientCredentials
 	options := []auth.Option{
-		auth.WithDiscoveryURL(discoveryUrl),
+		auth.WithDiscoveryURL(parsedUrl),
 		auth.WithGrantType(&grantType), // Use the client credentials grant type
 		auth.WithClientID(&CLIENT_ID),
 		auth.WithClientSecret(&CLIENT_SECRET),
