@@ -27,7 +27,7 @@ code to authenticate the CLI tool.
 
 			var accessToken *AccessTokenResponse
 
-			switch authConfig.GrantType {
+			switch *authConfig.GrantType {
 			case DeviceCode:
 				deviceCode, err := FetchDeviceCode(cmd.Context(), *authConfig)
 				if err != nil {
@@ -63,7 +63,7 @@ code to authenticate the CLI tool.
 			cmd.Println("Successfully authenticated!")
 			cmd.Println("Your access token is valid for", validFor, "seconds.")
 
-			storageProvider := storage.NewKeyringStorage(authConfig.ClientId)
+			storageProvider := storage.NewKeyringStorage(*authConfig.ClientId)
 			if err := storageProvider.SetToken(jwt.Token{
 				Raw: accessToken.AccessToken,
 			}); err != nil {
@@ -91,7 +91,7 @@ to quickly create a Cobra application.`,
 				return
 			}
 
-			storageProvider := storage.NewKeyringStorage(authConfig.ClientId)
+			storageProvider := storage.NewKeyringStorage(*authConfig.ClientId)
 			token, err := storageProvider.GetToken()
 			if err != nil {
 				cmd.PrintErr("error fetching token: ", err)
@@ -112,7 +112,7 @@ func NewLogoutCommand(options ...Option) *cobra.Command {
 				return
 			}
 
-			storageProvider := storage.NewKeyringStorage(authConfig.ClientId)
+			storageProvider := storage.NewKeyringStorage(*authConfig.ClientId)
 			err = storageProvider.DeleteToken()
 			if err != nil {
 				cmd.PrintErr("error logging out: ", err)

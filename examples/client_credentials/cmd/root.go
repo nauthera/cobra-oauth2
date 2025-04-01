@@ -30,8 +30,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const CLIENT_ID = "my-client-id"
-const CLIENT_SECRET = "my-client-secret"
+var CLIENT_ID = "my-client-id"
+var CLIENT_SECRET = "my-client-secret"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -57,12 +57,13 @@ func init() {
 
 	storageProvider := storage.NewKeyringStorage(CLIENT_ID)
 
+	grantType := auth.ClientCredentials
 	options := []auth.Option{
-		auth.WithDiscoveryURL(*discoveryUrl),
-		auth.WithGrantType(auth.ClientCredentials), // Use the client credentials grant type
-		auth.WithClientID(CLIENT_ID),
-		auth.WithClientSecret(CLIENT_SECRET),
-		auth.WithStorageProvider(storageProvider),
+		auth.WithDiscoveryURL(discoveryUrl),
+		auth.WithGrantType(&grantType), // Use the client credentials grant type
+		auth.WithClientID(&CLIENT_ID),
+		auth.WithClientSecret(&CLIENT_SECRET),
+		auth.WithStorageProvider(&storageProvider),
 	}
 
 	rootCmd.AddCommand(

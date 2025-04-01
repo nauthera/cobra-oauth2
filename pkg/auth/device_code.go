@@ -27,18 +27,18 @@ type DeviceAuthResponse struct {
 func FetchDeviceCode(ctx context.Context, config Config) (*DeviceAuthResponse, error) {
 	// Prepare the request payload
 	payload := map[string]string{
-		"client_id": config.ClientId,
-		"scope":     joinScopes(config.Scopes),
+		"client_id": *config.ClientId,
+		"scope":     joinScopes(*config.Scopes),
 	}
 
 	// Add optional audience
-	if config.Audience != "" {
-		payload["audience"] = config.Audience
+	if config.Audience != nil {
+		payload["audience"] = *config.Audience
 	}
 
 	// Add optional client secret
-	if config.ClientSecret != "" {
-		payload["client_secret"] = config.ClientSecret
+	if config.ClientSecret != nil {
+		payload["client_secret"] = *config.ClientSecret
 	}
 
 	// Serialize the payload to form-encoded format
@@ -48,7 +48,7 @@ func FetchDeviceCode(ctx context.Context, config Config) (*DeviceAuthResponse, e
 	}
 
 	// Create HTTP request
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, config.DeviceAuthorizationEndpoint, bytes.NewBufferString(formData.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, *config.DeviceAuthorizationEndpoint, bytes.NewBufferString(formData.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to create HTTP request", ErrInternal)
 	}

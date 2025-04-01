@@ -41,9 +41,9 @@ func TestPollForAccessToken(t *testing.T) {
 			defer server.Close()
 
 			config := Config{
-				ClientId:      "test_client_id",
-				ClientSecret:  "test_client_secret",
-				TokenEndpoint: server.URL,
+				ClientId:      strPtr("test_client_id"),
+				ClientSecret:  strPtr("test_client_secret"),
+				TokenEndpoint: &server.URL,
 			}
 
 			ctx := context.Background()
@@ -63,4 +63,8 @@ func TestPollForAccessToken(t *testing.T) {
 			}
 		})
 	}
+}
+
+func strPtr(s string) *string {
+	return &s
 }
