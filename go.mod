@@ -2,7 +2,7 @@ module github.com/nauthera/cobra-oauth2
 
 go 1.23.0
 
-toolchain go1.23.4
+toolchain go1.25.5
 
 require (
 	github.com/go-playground/validator v9.31.0+incompatible
