@@ -30,7 +30,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const CLIENT_ID = "my-client-id"
+var CLIENT_ID string
+var discoveryUrl string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -48,18 +49,35 @@ func Execute() {
 }
 
 func init() {
-	discoveryUrl, err := url.Parse("https://example.nauthera.io/.well-known/openid-configuration")
+	rootCmd.PersistentFlags().StringVar(&discoveryUrl, "discoveryUrl", "", "The discovery URL for the OAuth2 provider")
+	rootCmd.PersistentFlags().StringVar(&CLIENT_ID, "clientId", "", "The client ID for the OAuth2 provider")
+
+	cobra.OnInitialize(initConfig)
+}
+
+func initConfig() {
+	if discoveryUrl == "" {
+		rootCmd.PrintErr("discoveryUrl is required")
+		os.Exit(1)
+	}
+
+	if CLIENT_ID == "" {
+		rootCmd.PrintErr("clientId is required")
+		os.Exit(1)
+	}
+
+	parsedUrl, err := url.Parse(discoveryUrl)
 	if err != nil {
 		rootCmd.PrintErr("error parsing discovery URL: ", err)
-		return
+		os.Exit(1)
 	}
 
 	storageProvider := storage.NewKeyringStorage(CLIENT_ID)
 
 	options := []auth.Option{
-		auth.WithDiscoveryURL(*discoveryUrl),
-		auth.WithClientID(CLIENT_ID),
-		auth.WithStorageProvider(storageProvider),
+		auth.WithDiscoveryURL(parsedUrl),
+		auth.WithClientID(&CLIENT_ID),
+		auth.WithStorageProvider(&storageProvider),
 	}
 
 	rootCmd.AddCommand(

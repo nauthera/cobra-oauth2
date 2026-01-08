@@ -20,13 +20,13 @@ type AccessTokenResponse struct {
 func PollForAccessToken(ctx context.Context, config Config, deviceCode string, timeout time.Duration, interval time.Duration) (*AccessTokenResponse, error) {
 	// Serialize the payload to form-encoded format
 	payload := url.Values{
-		"client_id":   []string{config.ClientId},
+		"client_id":   []string{*config.ClientId},
 		"device_code": []string{deviceCode},
 		"grant_type":  []string{DeviceCode.String()},
 	}
 
-	if config.ClientSecret != "" {
-		payload.Set("client_secret", config.ClientSecret)
+	if config.ClientSecret != nil {
+		payload.Set("client_secret", *config.ClientSecret)
 	}
 
 	// Execute the HTTP request
@@ -42,7 +42,7 @@ func PollForAccessToken(ctx context.Context, config Config, deviceCode string, t
 			return nil, fmt.Errorf("%w: timed out waiting for user authorization", ErrTokenExpired)
 		default:
 			// Create HTTP request
-			req, err := http.NewRequestWithContext(ctx, http.MethodPost, config.TokenEndpoint, bytes.NewBufferString(payload.Encode()))
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, *config.TokenEndpoint, bytes.NewBufferString(payload.Encode()))
 			if err != nil {
 				return nil, fmt.Errorf("%w: failed to create HTTP request", ErrInternal)
 			}
@@ -74,7 +74,7 @@ func PollForAccessToken(ctx context.Context, config Config, deviceCode string, t
 		case http.StatusForbidden:
 			return nil, fmt.Errorf("%w: %s", ErrSlowDown, string(body))
 		default:
-			fmt.Printf("url: %s", config.TokenEndpoint)
+			fmt.Printf("url: %s", *config.TokenEndpoint)
 			return nil, fmt.Errorf("unexpected HTTP status %d: %s", resp.StatusCode, string(body))
 		}
 	}
