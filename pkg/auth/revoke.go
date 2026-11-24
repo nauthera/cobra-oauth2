@@ -71,6 +71,9 @@ func (c *Client) Revoke(ctx context.Context, token, hint string) error {
 // which callers may treat as a warning. With [WithEndSession] it then
 // shows (and opens) the provider's logout URL, so the browser session ends
 // too. With nothing stored it returns an error wrapping [ErrNotLoggedIn].
+// A stored record that cannot be read (corrupt, with too-open file
+// permissions, or from a newer version) is deleted without revocation,
+// and the error wraps [ErrRevocationFailed].
 func (c *Client) Logout(ctx context.Context) error {
 	c.refreshMu.Lock()
 	defer c.refreshMu.Unlock()
@@ -83,8 +86,18 @@ func (c *Client) Logout(ctx context.Context) error {
 	defer unlock()
 	c.setCached(nil)
 	tok, err := c.StoredToken(ctx)
-	if err != nil {
+	if errors.Is(err, ErrNotLoggedIn) {
 		return err
+	}
+	if err != nil {
+		// A record that exists but cannot be used (corrupt, readable by
+		// other users, written by a newer version) cannot be revoked, but
+		// logging out must still remove it: leaving it behind would keep
+		// an exposed refresh token on disk with no way to delete it.
+		if derr := c.store.Delete(ctx, c.StorageKey()); derr != nil {
+			return fmt.Errorf("delete stored token: %w", errors.Join(err, derr))
+		}
+		return fmt.Errorf("%w: the stored token set could not be read: %w", ErrRevocationFailed, err)
 	}
 
 	var revokeErr error
