@@ -61,7 +61,8 @@ sequenceDiagram
 - A server that does not rotate refresh tokens returns none, and the stored
   one is kept.
 - Logout deletes the local copy even when revocation fails, and reports the
-  failure as a warning.
+  failure as a warning. A stored record that cannot be read (corrupt, with
+  too-open permissions, from a newer version) is deleted too.
 
 ## Threats and mitigations
 
@@ -90,7 +91,10 @@ sequenceDiagram
   stripped of control characters, ANSI and OSC escape sequences and
   bidirectional overrides, and truncated, before they reach a terminal or an
   error message (a scope token carrying one is dropped when the response is
-  parsed). Raw bodies never appear in errors, and nothing from a hostile
+  parsed). The same goes for transport errors, whose TLS messages quote the
+  DNS names of whatever certificate a network attacker presented, and a
+  server URL whose query carries such characters is refused. Raw bodies never
+  appear in errors, and nothing from a hostile
   response can make the library panic.
 - **Dangerous URLs:** only https (or loopback http) URLs from the server are
   printed or handed to the OS browser opener. `file:`, `javascript:`, custom
@@ -103,7 +107,10 @@ sequenceDiagram
 ### Another program on the same machine
 
 - **The loopback redirect:** the listener binds `127.0.0.1` (or `[::1]`),
-  never all interfaces, and lives only for one login. It answers only the
+  never all interfaces, and lives only for one login. With
+  `WithRedirectHost("localhost")` it binds both on the same port, since the
+  browser may resolve the name to either, and fails rather than leave the
+  `::1` port to another user's process. It answers only the
   redirect path, accepts a single response with the right `state` (256 bits,
   compared in constant time) and shuts down after it. A local process that
   races to the port cannot complete the login without the PKCE verifier,
