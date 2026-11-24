@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 )
 
@@ -58,7 +59,8 @@ type Key struct {
 // issuer or client and is the same on every platform.
 func (k Key) ID() string {
 	h := sha256.New()
-	// NUL separators: no field can contain one, so the encoding is injective.
+	// NUL separators: Validate refuses a field containing one, so the
+	// encoding is injective for every key a provider accepts.
 	_, _ = h.Write([]byte(k.Issuer))
 	_, _ = h.Write([]byte{0})
 	_, _ = h.Write([]byte(k.ClientID))
@@ -67,13 +69,19 @@ func (k Key) ID() string {
 	return "oauth2-" + hex.EncodeToString(h.Sum(nil))[:40]
 }
 
-// Validate reports whether the key has the fields every provider needs.
+// Validate reports whether the key has the fields every provider needs. A
+// field may not contain a NUL byte, which [Key.ID] uses as its separator:
+// otherwise two different keys could share an ID and overwrite each
+// other's token set.
 func (k Key) Validate() error {
 	if k.Issuer == "" {
 		return errors.New("storage key: issuer is required")
 	}
 	if k.ClientID == "" {
 		return errors.New("storage key: client ID is required")
+	}
+	if strings.ContainsRune(k.Issuer+k.ClientID+k.Audience, 0) {
+		return errors.New("storage key: a field contains a NUL byte")
 	}
 	return nil
 }

@@ -67,6 +67,17 @@ func TestKeyValidate(t *testing.T) {
 	if err := testKey.Validate(); err != nil {
 		t.Fatal(err)
 	}
+	// Without the NUL check these two keys would share an ID.
+	a := Key{Issuer: "https://issuer.example\x00x", ClientID: "cli"}
+	b := Key{Issuer: "https://issuer.example", ClientID: "x\x00cli"}
+	if a.ID() != b.ID() {
+		t.Fatal("test keys were meant to collide")
+	}
+	for _, k := range []Key{a, b, {Issuer: "i", ClientID: "c", Audience: "a\x00"}} {
+		if err := k.Validate(); err == nil {
+			t.Fatalf("key with a NUL byte accepted: %q", k)
+		}
+	}
 }
 
 func TestTokenExpired(t *testing.T) {
