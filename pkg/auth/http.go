@@ -269,8 +269,12 @@ func (c *Client) getJSON(ctx context.Context, name, endpoint string) (int, []byt
 	return resp.StatusCode, body, resp.Header, nil
 }
 
+// maxTransportErrorLen bounds the printed message of a failed request.
+const maxTransportErrorLen = 1024
+
 // redactURLError strips the query string from a *url.Error so a URL with
-// embedded parameters never ends up in an error message.
+// embedded parameters never ends up in an error message, and makes the
+// message safe to print (see [transportError]).
 func redactURLError(err error) error {
 	var ue *url.Error
 	if errors.As(err, &ue) {
@@ -280,8 +284,20 @@ func redactURLError(err error) error {
 			ue.URL = u.String()
 		}
 	}
-	return err
+	return &transportError{err: err}
 }
+
+// transportError is a request that failed before a response arrived. Its
+// message can quote what the peer sent: a TLS failure lists the DNS names
+// of the certificate presented (x509.HostnameError), which a network
+// attacker chooses and which may hold terminal escape sequences. Error
+// returns the message sanitized; Unwrap keeps the original for errors.Is
+// and errors.As.
+type transportError struct{ err error }
+
+func (e *transportError) Error() string { return sanitize(e.err.Error(), maxTransportErrorLen) }
+
+func (e *transportError) Unwrap() error { return e.err }
 
 func cloneValues(v url.Values) url.Values {
 	out := make(url.Values, len(v))

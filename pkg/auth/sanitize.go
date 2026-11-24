@@ -15,7 +15,8 @@ const (
 
 // sanitize makes a server-controlled string safe to print to a terminal or a
 // log: it drops C0 and C1 control characters (so no ANSI/OSC escape sequence
-// survives), DEL, and the Unicode bidirectional overrides that can make text
+// survives), DEL, Unicode line separators and invisible characters, and the
+// Unicode bidirectional controls that can make text
 // read differently from what it is, then truncates to max runes.
 func sanitize(s string, maxRunes int) string {
 	if !utf8.ValidString(s) {
@@ -41,7 +42,12 @@ func isUnsafeRune(r rune) bool {
 	switch {
 	case r < 0x20, r == 0x7f, r >= 0x80 && r <= 0x9f:
 		return true
-	case r >= 0x202a && r <= 0x202e, r >= 0x2066 && r <= 0x2069, r == 0x200e, r == 0x200f:
+	case r >= 0x202a && r <= 0x202e, r >= 0x2066 && r <= 0x2069, r == 0x200e, r == 0x200f, r == 0x061c:
+		// Bidirectional overrides, isolates and marks.
+		return true
+	case r == 0x2028, r == 0x2029, r == 0x200b, r == 0x2060, r == 0xfeff:
+		// Line and paragraph separators, and invisible characters that
+		// hide what a string really is.
 		return true
 	}
 	return false

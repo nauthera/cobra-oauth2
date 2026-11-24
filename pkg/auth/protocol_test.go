@@ -20,6 +20,9 @@ func TestSanitize(t *testing.T) {
 		{"bidi \u202egnp.exe", "bidi gnp.exe"},
 		{"new\nline\ttab\rcr\x7f", "newlinetabcr"},
 		{"invalid utf8 \xff\xfe ok", "invalid utf8  ok"},
+		{"arabic mark \u061cx", "arabic mark x"},
+		{"line\u2028sep\u2029para", "lineseppara"},
+		{"zero\u200bwidth\u2060join\ufeffbom", "zerowidthjoinbom"},
 	}
 	for _, tc := range cases {
 		if got := sanitize(tc.in, 100); got != tc.want {

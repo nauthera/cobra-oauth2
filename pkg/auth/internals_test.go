@@ -119,6 +119,12 @@ func TestSafeBrowserURL(t *testing.T) {
 		"https://as.example/%zz":      false,
 		"custom-app://callback?x=1":   false,
 		"https://xn--80ak6aa92e.com/": true,
+		// The query is printed as it came: C1 controls and bidi
+		// overrides there are refused; elsewhere they are escaped.
+		"https://as.example/d?user_code=ABCD&x=%E2%80%AE": true,
+		"https://as.example/d?a=\u009b31m":                false,
+		"https://as.example/d?a=\u202egnp.exe":            false,
+		"https://as.example/\u202e?a=1":                   true,
 	} {
 		_, err := c.safeBrowserURL(raw)
 		if (err == nil) != ok {

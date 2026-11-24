@@ -7,7 +7,9 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/pkg/browser"
 )
@@ -77,6 +79,13 @@ func (c *Client) safeBrowserURL(raw string) (*url.URL, error) {
 		}
 	default:
 		return nil, fmt.Errorf("%w: refusing URL with scheme %q", ErrInvalidResponse, sanitize(u.Scheme, 16))
+	}
+	// url.URL.String escapes the path and fragment but leaves the query as
+	// it came. The URL is printed to the terminal, so a query carrying a C1
+	// control (U+009B starts an escape sequence) or a bidirectional
+	// override is refused.
+	if s := u.String(); !utf8.ValidString(s) || strings.ContainsFunc(s, isUnsafeRune) {
+		return nil, fmt.Errorf("%w: URL %q contains characters that are unsafe to display", ErrInvalidResponse, sanitize(raw, maxURILen))
 	}
 	return u, nil
 }
