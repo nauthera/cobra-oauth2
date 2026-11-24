@@ -88,6 +88,21 @@ func TestLockerErrors(t *testing.T) {
 	} else {
 		unlock()
 	}
+	// A lock file that cannot be opened (here a directory in its place)
+	// is an error for the file locker, which must not report a lock it
+	// does not hold, and no locking for the keyring.
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, testKey.ID()+".lock"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := NewFileLocker(dir).Lock(context.Background(), testKey); err == nil {
+		t.Fatal("lock succeeded although the lock file cannot be opened")
+	}
+	unlock, err = NewKeyring("svc", WithLockDir(dir)).(Locker).Lock(context.Background(), testKey)
+	if err != nil {
+		t.Fatalf("keyring lock must degrade, not fail: %v", err)
+	}
+	unlock()
 }
 
 func TestProvidersAreLockers(t *testing.T) {
