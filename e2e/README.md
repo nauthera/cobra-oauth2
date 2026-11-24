@@ -118,6 +118,22 @@ waits for approval, then calls userinfo through `Client.Transport`, refreshes,
 checks that reusing the spent refresh token is refused, and logs out. Run it
 with `-run TestInteractiveDeviceLogin -v` so the prompt is visible.
 
+## In CI
+
+`.github/workflows/e2e.yml` runs these tests on every push to `main` and on
+demand (Actions → e2e → Run workflow), never on pull requests. It targets a
+dedicated organization on the hosted nauthera, declared with its two clients
+in the `nauthera/gitops` repository (`apps/cobra-oauth2-e2e`). That
+repository's `scripts/seal-tokens.sh cobra-oauth2-e2e` sets the Actions
+variables `NAUTHERA_E2E_ISSUER`, `NAUTHERA_E2E_CLIENT_ID` and
+`NAUTHERA_E2E_SERVICE_CLIENT_ID` and the secret `NAUTHERA_E2E_CLIENT_SECRET`;
+re-running it rotates the secret. Without `NAUTHERA_E2E_ISSUER` the job is
+skipped, so forks stay green.
+
+The test user is optional: set `NAUTHERA_E2E_USER_EMAIL` as a variable and
+`NAUTHERA_E2E_USER_PASSWORD` as a secret once a user exists in that
+organization, and the automated approval tests run too.
+
 ## Certificates
 
 A local server usually has a self-signed certificate. Trust it for the run,
