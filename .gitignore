@@ -80,3 +80,9 @@ coverage.html
 .env
 .env.*
 !.env.example
+
+# The agent rules CLAUDE.md links are tracked, even where a global ignore
+# hides .claude/; local agent state (settings.local.json, worktrees) is not.
+!.claude/
+.claude/*
+!.claude/rules/

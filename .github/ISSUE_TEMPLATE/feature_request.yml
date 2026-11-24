@@ -1,6 +1,7 @@
 name: Feature request
 description: Propose a new capability or improvement.
 labels: [enhancement]
+type: Task
 body:
   - type: textarea
     id: problem
