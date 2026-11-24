@@ -1,0 +1,75 @@
+name: Bug report
+description: Something isn't working as expected (non-security).
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Do not report security vulnerabilities here**:
+        follow [SECURITY.md](../blob/main/SECURITY.md) instead.
+
+        Never paste access tokens, refresh tokens, client secrets or device
+        codes. Redact them (`eyJ…REDACTED`) before you submit.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+      placeholder: "`login` with the device flow returned … but I expected …"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal code or commands, the options you pass, or a failing test.
+      placeholder: |
+        1. Configure the commands with `auth.With…`
+        2. Run `mycli login`
+        3. Observe …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Module version
+      description: The cobra-oauth2 version or commit from your go.mod (`go list -m github.com/nauthera/cobra-oauth2`).
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Authorization server
+      description: Which provider and, if you know it, its version (nauthera-server, Keycloak, Auth0, Okta, Entra ID, Google, …).
+    validations:
+      required: true
+  - type: dropdown
+    id: flow
+    attributes:
+      label: Flow
+      options:
+        - Device authorization grant
+        - Authorization code + PKCE (browser)
+        - Client credentials
+        - Refresh / token command
+        - Logout / revocation
+        - Discovery / configuration
+        - Token storage
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Go version, OS/arch, and the storage provider you use (keyring, file, memory, custom).
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant output (redacted)
+      description: Error messages and HTTP status codes. Never paste tokens or secrets.
+      render: text
+    validations:
+      required: false
