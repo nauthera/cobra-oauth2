@@ -1,0 +1,208 @@
+name: CI
+
+# Every pull request and every push to main. `just check` runs the same lint,
+# test, vuln, tidy and examples steps locally on one platform; CONTRIBUTING.md
+# ("What CI runs") says what only CI covers.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Least privilege: every job reads the repository and nothing else unless it
+# says so itself.
+permissions:
+  contents: read
+
+# A newer push to a pull request cancels the older run, which is testing code
+# that is about to change. Every other run gets a group of its own (the run id
+# keys it), so no run on main is ever cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  # Pinned, not "latest": a floating linter makes CI non-reproducible and drifts
+  # red as new checks ship. Keep equal to the justfile; bump both together.
+  GOLANGCI_LINT_VERSION: v2.14.0
+  GOVULNCHECK_VERSION: v1.10.0
+
+jobs:
+  workflow-hygiene:
+    name: actions are pinned by commit SHA
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Every action is pinned to a full commit SHA with its version as a comment
+        # A tag is mutable, so a tag pin lets whoever controls the action's
+        # repository change what runs here after review. Dependabot
+        # (github-actions, weekly) keeps the SHAs and their comments current.
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(.github/workflows/*.yml .github/workflows/*.yaml)
+          [ ${#files[@]} -gt 0 ] || { echo "no workflow files found" >&2; exit 1; }
+          bad=$(grep -nE '^[[:space:]]*(-[[:space:]]+)?uses:' "${files[@]}" \
+            | grep -vE 'uses:[[:space:]]*(\./|docker://)' \
+            | grep -vE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}[[:space:]]+#[[:space:]]*v[0-9]' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::actions not pinned to a commit SHA with a '# vX.Y.Z' comment:"
+            echo "$bad"
+            exit 1
+          fi
+
+  lint:
+    name: lint (golangci-lint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      # `golangci-lint run` reports formatting (gofumpt, goimports) as well, so
+      # this one step covers `just fmt-check` and `just lint`.
+      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+      - name: go vet, the e2e-tagged packages included
+        run: go vet -tags e2e ./...
+
+  test:
+    name: test (${{ matrix.os }}, go ${{ matrix.go }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        # `minimum` is the go directive in go.mod, the oldest Go an importer
+        # may build with; `stable` is the newest release.
+        go: [minimum, stable]
+    defaults:
+      run:
+        shell: bash
+    env:
+      # Race detector needs cgo on every platform.
+      CGO_ENABLED: '1'
+      # Test with exactly the Go set up below; never switch to the toolchain
+      # line in go.mod.
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the Go version
+        id: go
+        env:
+          WANT: ${{ matrix.go }}
+        run: |
+          set -euo pipefail
+          if [ "$WANT" = minimum ]; then
+            version=$(awk '$1 == "go" { print $2; exit }' go.mod)
+          else
+            version=$WANT
+          fi
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ steps.go.outputs.version }}
+      - name: Race tests with coverage
+        # -coverpkg counts statements reached from another package's test; the
+        # examples are left out of the denominator (nothing tests them).
+        run: |
+          set -euo pipefail
+          coverpkg=$(go list ./... | grep -vE '/examples/|/internal/cmd/' | paste -sd, -)
+          go test -race -covermode=atomic -coverpkg="$coverpkg" -coverprofile=coverage.out ./...
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.go == 'stable'
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.out
+          # A fork's pull request has no token; coverage is advisory there.
+          fail_ci_if_error: false
+
+  vuln:
+    name: known vulnerabilities (govulncheck)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The newest Go, not go.mod's minimum: govulncheck also reports the
+      # standard library of the Go it runs on, and an importer is expected to
+      # build with a supported, patched release. A finding in this module's
+      # dependency graph fails the job whatever the Go.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - name: govulncheck
+        run: go run "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}" ./...
+
+  tidy:
+    name: go.mod and go.sum are tidy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: go mod tidy -diff
+        run: go mod tidy -diff
+      - name: go mod verify
+        run: go mod verify
+
+  examples:
+    name: examples build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: go build ./examples/...
+        run: go build ./examples/...
+
+  conventional:
+    name: conventional commits (title and commits)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read # the current title, read through the API
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the pull request's commits back to its base
+          persist-credentials: false
+      - name: The pull request title is a conventional commit
+        # The title becomes the merge commit's subject, which the release
+        # notes are built from. It is read from the API rather than the event,
+        # so after a retitle "Re-run jobs" checks the new title.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          title=$(gh pr view "$PR" --json title --jq .title)
+          scripts/check-commit-msg.sh --subject "$title"
+      - name: Every commit subject is a conventional commit
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: scripts/check-commit-msg.sh --range "$BASE..$HEAD"

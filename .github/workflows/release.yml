@@ -1,0 +1,93 @@
+name: Release
+
+# A tag vX.Y.Z publishes a release, and vX.Y.Z-rc.N a release candidate (a
+# GitHub pre-release). This is a library, so a release is the tag itself plus
+# a GitHub release whose notes come from the conventional commits since the
+# previous release (scripts/release-notes.sh); there are no binaries to build.
+# A release tag must name a commit that was main's head; a candidate may be cut
+# from any branch. CONTRIBUTING.md ("Releasing") says how to cut one.
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
+
+permissions: {}
+
+# One run per tag, never cancelled halfway.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: GitHub release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # create the release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # main's history, and the tags back to the previous release
+          persist-credentials: false
+
+      - name: The tag is a version, and a release tag is on main
+        id: tag
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! $TAG =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-rc\.(0|[1-9][0-9]*))?$ ]]; then
+            echo "::error::$TAG is neither vX.Y.Z nor vX.Y.Z-rc.N"
+            exit 1
+          fi
+          prerelease=false
+          if [ -n "${BASH_REMATCH[4]}" ]; then prerelease=true; fi
+          commit=$(git rev-parse "$TAG^{commit}")
+          # main's first-parent line holds the commits main pointed at; one
+          # merely reachable from main may be a branch commit main never was.
+          # grep reads the whole list (no -q), so pipefail sees no SIGPIPE.
+          if [ "$prerelease" = false ] && ! git rev-list --first-parent origin/main | grep -x "$commit" >/dev/null; then
+            echo "::error::$TAG names $commit, which was never the head of main. Tag a release on main; a candidate (vX.Y.Z-rc.N) may be tagged anywhere."
+            exit 1
+          fi
+          echo "prerelease=$prerelease" >>"$GITHUB_OUTPUT"
+
+      # The tag may name a commit CI never saw (a candidate on a branch), so
+      # the tests run once more before anything is published.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: The module builds and its tests pass
+        run: |
+          set -euo pipefail
+          go build ./...
+          go test ./...
+
+      - name: Write the release notes
+        run: scripts/release-notes.sh "$GITHUB_REF_NAME" >notes.md
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ steps.tag.outputs.prerelease }}
+        run: |
+          set -euo pipefail
+          flags=()
+          if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
+          gh release create "$TAG" --verify-tag --title "$TAG" --notes-file notes.md "${flags[@]}"
+
+      # The module proxy fetches a version the first time someone asks for
+      # it; asking now makes the release resolvable, and listed on
+      # pkg.go.dev, without waiting for the first importer. Best effort: the
+      # release is already published.
+      - name: Ask the Go module proxy for the new version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+            "https://proxy.golang.org/github.com/nauthera/cobra-oauth2/@v/${TAG}.info" \
+            || echo "::warning::the module proxy did not answer for $TAG yet; it fetches on first use"

@@ -1,11 +1,79 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
+
+# The dependency policy for this repository, in nauthera-server's style.
+#
+#   gomod          go.mod / go.sum at the root. The examples live in the same
+#                  module, so they need no entry of their own.
+#   github-actions every `uses:` in .github/workflows, the surface a
+#                  supply-chain attack on a third-party action would come
+#                  through. Every action is SHA-pinned (ci.yml's
+#                  workflow-hygiene job), and GitHub raises no alerts for
+#                  SHA-pinned actions, so this schedule is their only
+#                  automated route to a fix.
+#
+# This is a library: its go.mod requirements are minimums every importer
+# inherits. A bump here raises the floor for everyone downstream, so routine
+# minor/patch updates are grouped into one pull request a week and majors
+# come one at a time, for a real review.
+#
+# Security updates are grouped too, so one advisory round is one pull request,
+# and they are not held back by the cooldown below (cooldown applies to
+# version updates only).
+#
+# Commit messages are Conventional Commits with the `deps` scope, which
+# scripts/release-notes.sh folds into the "Dependencies" block of the notes,
+# and which ci.yml's conventional-commits check accepts.
+#
+# Tool versions are not here: golangci-lint and govulncheck are pinned in the
+# justfile and ci.yml (GOLANGCI_LINT_VERSION, GOVULNCHECK_VERSION) and move
+# by hand, together.
+#
+# This file is the whole policy because Dependabot is the only bot here.
+# Renovate is switched off by .github/renovate.json: run beside this file it
+# proposes every update a second time, ungrouped, and applies none of the
+# rules below.
 updates:
-  - package-ecosystem: "gomod" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: gomod
+    directory: /
     schedule:
-      interval: "daily"
+      interval: weekly
+      day: monday
+      time: '06:00'
+    open-pull-requests-limit: 5
+    # A new release waits a few days before it is proposed: time for a broken
+    # or compromised release to be noticed and pulled first. Majors wait
+    # longer, since they are reviewed one by one anyway.
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      go-minor-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      go-security:
+        applies-to: security-updates
+        patterns: ['*']
+    labels: [dependencies, go]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+    open-pull-requests-limit: 5
+    # A new action release waits a week before it is proposed.
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci(deps)
+    groups:
+      actions:
+        applies-to: version-updates
+        patterns: ['*']
+      actions-security:
+        applies-to: security-updates
+        patterns: ['*']
+    labels: [dependencies, ci]
