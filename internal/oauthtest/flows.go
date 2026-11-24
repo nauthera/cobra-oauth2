@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -57,26 +58,43 @@ func loopbackHost(host string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
-// redirectAllowed matches a redirect URI exactly against the registered
+// registeredRedirect matches a redirect URI exactly against the registered
 // ones, except that a loopback http URI may differ by port (RFC 8252 § 7.3).
-func redirectAllowed(c *Client, raw string) bool {
-	if slices.Contains(c.RedirectURIs, raw) {
-		return true
-	}
+// It returns the URL to redirect to, built from the registered URI so that
+// nothing from the request but a numeric loopback port reaches it.
+func registeredRedirect(c *Client, raw string) (*url.URL, bool) {
 	got, err := url.Parse(raw)
-	if err != nil || got.Scheme != "http" || !loopbackHost(got.Hostname()) {
-		return false
+	if err != nil {
+		return nil, false
 	}
 	for _, reg := range c.RedirectURIs {
 		want, err := url.Parse(reg)
 		if err != nil {
 			continue
 		}
-		if want.Scheme == got.Scheme && want.Hostname() == got.Hostname() && want.Path == got.Path && want.RawQuery == got.RawQuery {
-			return true
+		if reg == raw {
+			return want, true
 		}
+		if got.Scheme != "http" || !loopbackHost(got.Hostname()) {
+			continue
+		}
+		if want.Scheme != got.Scheme || want.Hostname() != got.Hostname() || want.Path != got.Path || want.RawQuery != got.RawQuery {
+			continue
+		}
+		port, err := strconv.ParseUint(got.Port(), 10, 16)
+		if err != nil || port == 0 {
+			return nil, false
+		}
+		want.Host = net.JoinHostPort(want.Hostname(), strconv.FormatUint(port, 10))
+		return want, true
 	}
-	return false
+	return nil, false
+}
+
+// redirectOK reports whether raw matches a registered redirect URI.
+func redirectOK(c *Client, raw string) bool {
+	_, ok := registeredRedirect(c, raw)
+	return ok
 }
 
 func (s *Server) grantAllowed(c *Client, grant string) bool {
@@ -87,7 +105,7 @@ func (s *Server) grantAllowed(c *Client, grant string) bool {
 // request, pushed or not, and returns an error code and description.
 func (s *Server) validAuthorizationParams(c *Client, p url.Values) (code, desc string) {
 	switch {
-	case !redirectAllowed(c, p.Get("redirect_uri")):
+	case !redirectOK(c, p.Get("redirect_uri")):
 		return "invalid_request", "redirect_uri is not registered"
 	case p.Get("response_type") != "code":
 		return "unsupported_response_type", "only code is supported"
@@ -127,12 +145,18 @@ func (s *Server) serveAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	c := s.clientByID(params.Get("client_id"))
-	if c == nil || !redirectAllowed(c, params.Get("redirect_uri")) {
+	var (
+		redirect *url.URL
+		ok       bool
+	)
+	if c != nil {
+		redirect, ok = registeredRedirect(c, params.Get("redirect_uri"))
+	}
+	if !ok {
 		// Never redirect to an unverified URI: show an error page.
 		http.Error(w, "unknown client or redirect_uri", http.StatusBadRequest)
 		return
 	}
-	redirect, _ := url.Parse(params.Get("redirect_uri"))
 	resp := url.Values{}
 	if st := params.Get("state"); st != "" {
 		resp.Set("state", st)
@@ -162,7 +186,7 @@ func (s *Server) serveAuthorize(w http.ResponseWriter, r *http.Request) {
 		resp.Set("code", code)
 	}
 	redirect.RawQuery = resp.Encode()
-	//nolint:gosec // G710: redirect_uri was matched against the client's registered URIs above
+	// The target is built from a registered redirect URI (registeredRedirect).
 	http.Redirect(w, r, redirect.String(), http.StatusFound)
 }
 
