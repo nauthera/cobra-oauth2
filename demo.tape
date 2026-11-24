@@ -1,19 +1,43 @@
-# Where should we write the GIF?
+# Records demo.gif: `just demo`, or `vhs demo.tape` from the repository root.
+#
+# The CLI is examples/nauthera. It talks to internal/cmd/demoidp, a local
+# server configured like nauthera-server that approves the device code on
+# the third poll, so the recording needs no account and no browser.
+
 Output demo.gif
 
-# Set up a 1200x600 terminal with 46px font.
+Require go
+
+Set Shell "bash"
 Set FontSize 14
-Set Width 1200
-Set Height 800
+Set Width 1000
+Set Height 620
+Set Padding 20
+Set TypingSpeed 45ms
 
-# Type a command in the terminal.
-Type "go run examples/basic/main.go login"
-
-# Pause for dramatic effect...
-Sleep 500ms
-
-# Run the command by pressing enter.
+Hide
+Type "source scripts/demo-setup.sh && clear"
 Enter
+Sleep 8s
+Show
 
-# Admire the output for a bit.
-Sleep 15s
+Type "nauthera auth login --flow device --no-browser"
+Sleep 500ms
+Enter
+Sleep 7500ms
+
+Type "clear"
+Enter
+Type "nauthera auth status"
+Sleep 500ms
+Enter
+Sleep 3s
+
+Type "nauthera auth logout --no-browser"
+Sleep 500ms
+Enter
+Sleep 4s
+
+Hide
+Type "demo_teardown"
+Enter
