@@ -134,6 +134,28 @@ The test user is optional: set `NAUTHERA_E2E_USER_EMAIL` as a variable and
 `NAUTHERA_E2E_USER_PASSWORD` as a secret once a user exists in that
 organization, and the automated approval tests run too.
 
+## Auth0
+
+`auth0_e2e_test.go` runs the same library against an Auth0 tenant, a
+provider with different quirks: an issuer with a trailing slash, the
+`audience` parameter and RS256 JWT access tokens. It needs a Machine to
+Machine application authorized for an API
+([examples/auth0/README.md](../examples/auth0/README.md) sets one up):
+
+```bash
+export AUTH0_DOMAIN=example.eu.auth0.com   # or AUTH0_DISCOVERY_URL
+export AUTH0_CLIENT_ID=... AUTH0_CLIENT_SECRET=... AUTH0_AUDIENCE=https://api.example.com
+go test -tags e2e -count=1 -v -run Auth0 ./e2e/...
+```
+
+It checks discovery with the exact trailing-slash issuer, client credentials
+whose access token is a JWT for the audience, and that a wrong secret is
+refused without being echoed. With `AUTH0_DEVICE_CLIENT_ID` (a Native
+application with the Device Code grant) it also starts a device
+authorization. In CI the `auth0` job of `e2e.yml` reads the repository
+secrets `AUTH0_DISCOVERY_URL`, `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET` and
+`AUTH0_AUDIENCE`, and the optional variable `AUTH0_DEVICE_CLIENT_ID`.
+
 ## Certificates
 
 A local server usually has a self-signed certificate. Trust it for the run,

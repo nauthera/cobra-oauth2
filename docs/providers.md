@@ -213,6 +213,9 @@ auth.Auth0("example.eu.auth0.com", "https://api.example.com") // domain, API aud
   rotation with reuse detection. The revocation endpoint revokes refresh
   tokens only. PAR, JAR and DPoP depend on your plan; the library follows the
   discovery flags.
+- **Example:** [examples/auth0](../examples/auth0) sets up the Auth0
+  applications step by step; the live tests in `e2e/auth0_e2e_test.go` run
+  against a real tenant.
 
 ## Keycloak
 

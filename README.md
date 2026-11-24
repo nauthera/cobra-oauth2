@@ -184,6 +184,8 @@ More complete programs are in [examples/](examples):
   fallback, logout with revocation and end-session, and token exchange.
 - [client_credentials](examples/client_credentials/cmd/root.go): a CI job.
 - [github](examples/github/cmd/root.go): the GitHub preset with the device flow.
+- [auth0](examples/auth0): the Auth0 preset with an API audience, for people
+  (browser or device flow) and Machine to Machine applications.
 
 ## Choosing a flow
 
