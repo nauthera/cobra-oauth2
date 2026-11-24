@@ -1,0 +1,2 @@
+{"status": 400, "header": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+ "body": {"error": "expired_token", "error_description": "The device code is unknown or has expired.", "error_uri": "https://nauthera.io/runbooks/oauth/expired_token"}}

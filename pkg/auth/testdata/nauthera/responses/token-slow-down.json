@@ -1,0 +1,2 @@
+{"status": 400, "header": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+ "body": {"error": "slow_down", "error_description": "Polling too frequently; increase the interval by 5 seconds.", "error_uri": "https://nauthera.io/runbooks/oauth/slow_down"}}

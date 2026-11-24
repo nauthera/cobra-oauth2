@@ -1,0 +1,2 @@
+{"status": 400, "header": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+ "body": {"error": "invalid_grant", "error_description": "The refresh token is invalid.", "error_uri": "https://nauthera.io/runbooks/oauth/invalid_grant"}}

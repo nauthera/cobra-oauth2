@@ -1,0 +1,2 @@
+{"status": 401, "header": {"Content-Type": "application/json", "Cache-Control": "no-store", "WWW-Authenticate": "Basic realm=\"nauthera\""},
+ "body": {"error": "invalid_client", "error_description": "Client authentication failed.", "error_uri": "https://nauthera.io/runbooks/oauth/invalid_client"}}

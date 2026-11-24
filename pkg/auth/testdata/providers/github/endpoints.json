@@ -1,0 +1,6 @@
+{
+  "_comment": "GitHub publishes no discovery document; these are its fixed endpoints, used only to route the fake server.",
+  "authorization_endpoint": "{{origin}}/login/oauth/authorize",
+  "token_endpoint": "{{origin}}/login/oauth/access_token",
+  "device_authorization_endpoint": "{{origin}}/login/device/code"
+}

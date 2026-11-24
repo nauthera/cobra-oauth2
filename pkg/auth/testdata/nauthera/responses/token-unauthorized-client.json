@@ -1,0 +1,2 @@
+{"status": 400, "header": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+ "body": {"error": "unauthorized_client", "error_description": "The client is not allowed to use this grant type.", "error_uri": "https://nauthera.io/runbooks/oauth/unauthorized_client"}}

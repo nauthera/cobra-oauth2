@@ -1,0 +1,2 @@
+{"status": 401, "header": {"WWW-Authenticate": "DPoP error=\"use_dpop_nonce\", error_description=\"Resource server requires nonce in DPoP proof\", algs=\"ES256 PS256 PS384 PS512 RS256 RS384 RS512\"", "DPoP-Nonce": "REDACTED-nonce"},
+ "body": ""}

@@ -1,0 +1,2 @@
+{"status": 503, "header": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+ "body": {"error": "temporarily_unavailable", "error_description": "Revocation could not be recorded; the token is still valid. Retry.", "error_uri": "https://nauthera.io/runbooks/oauth/temporarily_unavailable"}}

@@ -1,0 +1,2 @@
+{"status": 400, "header": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+ "body": {"error": "access_denied", "error_description": "The user denied the request.", "error_uri": "https://nauthera.io/runbooks/oauth/access_denied"}}
