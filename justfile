@@ -236,8 +236,8 @@ install-tools:
 # ---- Releasing ----------------------------------------------------------------
 
 # Tag locally first to preview, and delete the tag again if you are not
-# releasing yet: `git tag -a v0.3.0 -m v0.3.0 && just release-notes v0.3.0`,
-# then `git push origin v0.3.0` or `git tag -d v0.3.0`.
+# releasing yet: `git tag -a v1.1.0 -m v1.1.0 && just release-notes v1.1.0`,
+# then `git push origin v1.1.0` or `git tag -d v1.1.0`.
 #
 # Print the release notes a tag would get (scripts/release-notes.sh).
 release-notes tag:

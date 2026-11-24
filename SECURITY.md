@@ -7,16 +7,16 @@ highest-priority work on the project.
 
 ## Supported versions
 
-The module is pre-1.0. Fixes land on `main` and ship in the next release of the
-**latest minor version**; older minors do not get backports.
+Fixes land on `main` and ship in the next patch release of the **latest minor
+version** of the current major version; older minors do not get backports. A v1
+minor release never breaks code that builds against an earlier v1, so moving
+to the latest one is always the upgrade path.
 
-| Version            | Supported          |
-| ------------------ | ------------------ |
-| latest `v0.x` minor | :white_check_mark: |
-| older `v0.x`       | :x:                |
-| untagged commits   | :x: (use a release) |
-
-Once `v1.0.0` ships, this table will name the supported major and minor lines.
+| Version             | Supported           |
+| ------------------- | ------------------- |
+| latest `v1.x` minor | :white_check_mark:  |
+| older `v1.x`        | :x: (upgrade within v1) |
+| `v0.x`, untagged    | :x:                 |
 
 ## Reporting a vulnerability
 

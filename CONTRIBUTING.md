@@ -54,7 +54,7 @@ just tidy            # go mod tidy + verify
 just vuln            # govulncheck, pinned
 just examples        # build every example
 just e2e             # live tests against a running nauthera-server (§ 5)
-just release-notes v0.3.0   # preview a release's notes (§ 8)
+just release-notes v1.1.0   # preview a release's notes (§ 8)
 ```
 
 ### Two tiers: the hooks and `just check`
@@ -314,10 +314,13 @@ BREAKING CHANGE: StorageProvider.GetToken now takes a Key. Wrap the client id
 you passed before with storage.KeyFor(issuer, clientID).
 ```
 
-The release notes list either form under "Breaking changes" first. Before
-v1.0.0 a breaking change ships in a new minor version (v0.3.0 → v0.4.0), and
-its footer is what importers read in the release notes, so say there what to
-change.
+The release notes list either form under "Breaking changes" first. Since
+v1.0.0 the module follows semantic versioning, so a breaking change cannot
+ship in v1 at all: it needs a v2 with the module path
+`github.com/nauthera/cobra-oauth2/v2`. Prefer a compatible change (a new
+option or function, a `// Deprecated:` note on the old one); open an issue
+before starting anything that would need a new major version. Its footer is
+what importers read in the release notes, so say there what to change.
 
 `git commit --fixup` / `--squash` commits are accepted locally by the hook,
 but CI refuses them in a PR: squash them before merging
@@ -369,15 +372,16 @@ which the Go module proxy serves, plus a GitHub release with notes.
 - `vX.Y.Z-rc.N` is a release candidate, published as a GitHub pre-release,
   and may be tagged on any branch.
 
-Pick the version from what landed since the last release: before v1.0.0 a
-breaking change or a feature bumps the minor version, a fix the patch
-version. Then:
+Pick the version from what landed since the last release, by semantic
+versioning: a feature (`feat`) bumps the minor version, anything else that
+changes the module (`fix`, `perf`, a dependency update) the patch version.
+A breaking change is not released in v1 (see "Commits" above). Then:
 
 ```bash
 git switch main && git pull
-git tag -a v0.4.0 -m v0.4.0
-just release-notes v0.4.0     # preview; `git tag -d v0.4.0` backs out before the push
-git push origin v0.4.0
+git tag -a v1.1.0 -m v1.1.0
+just release-notes v1.1.0     # preview; `git tag -d v1.1.0` backs out before the push
+git push origin v1.1.0
 ```
 
 The workflow checks the tag, runs the build and tests once more, writes the

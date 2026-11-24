@@ -16,7 +16,8 @@ against the quirks of GitHub, Google, Entra ID, Okta, Auth0, Keycloak and others
 
 ![Demo](./demo.gif)
 
-> **Pre-1.0.** The API can still change between minor versions.
+> **Stable since v1.0.0.** The module follows [semantic versioning](https://semver.org):
+> minor and patch releases never break code that builds against an earlier v1.
 
 ---
 
