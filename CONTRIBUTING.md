@@ -170,7 +170,7 @@ Bypass both for a single commit with `git commit --no-verify`, and re-run
   TLS verification. The exact steps on the server side change with the server;
   its CONTRIBUTING.md is the reference, not this file.
 - **Coverage.** New code should not lower the coverage of the package it lives
-  in. `just cover` writes `coverage.html`; CI uploads the profile to Codecov.
+  in. `just cover` writes `coverage.html`; CI prints the total in the job summary.
 
 ---
 
@@ -343,7 +343,7 @@ but CI refuses them in a PR: squash them before merging
 | ---------------------------------- | ----------------------------------------------------------------------- | ---------------------- |
 | actions are pinned by commit SHA   | every `uses:` is a full commit SHA with a `# vX.Y.Z` comment            | (read the diff)        |
 | lint                               | golangci-lint (formatting included), `go vet -tags e2e`                 | `just lint`, `just vet` |
-| test                               | race tests with coverage on Linux, macOS and Windows, on go.mod's minimum Go and the latest stable; coverage to Codecov from one of them | `just test-race-cover` |
+| test                               | race tests with coverage on Linux, macOS and Windows, on go.mod's minimum Go and the latest stable; the coverage total in the job summary of one of them | `just test-race-cover` |
 | known vulnerabilities              | govulncheck on the latest stable Go                                     | `just vuln`            |
 | go.mod and go.sum are tidy         | `go mod tidy -diff`, `go mod verify`                                    | `just tidy-check`      |
 | examples build                     | `go build ./examples/...`                                               | `just examples`        |

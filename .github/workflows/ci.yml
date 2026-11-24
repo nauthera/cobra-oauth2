@@ -119,14 +119,12 @@ jobs:
           set -euo pipefail
           coverpkg=$(go list ./... | grep -vE '/examples/|/internal/cmd/' | paste -sd, -)
           go test -race -covermode=atomic -coverpkg="$coverpkg" -coverprofile=coverage.out ./...
-      - name: Upload coverage to Codecov
+      - name: Coverage summary
         if: matrix.os == 'ubuntu-latest' && matrix.go == 'stable'
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage.out
-          # A fork's pull request has no token; coverage is advisory there.
-          fail_ci_if_error: false
+        run: |
+          set -euo pipefail
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ { print $NF }')
+          echo "Total statement coverage: **${total}**" >>"$GITHUB_STEP_SUMMARY"
 
   vuln:
     name: known vulnerabilities (govulncheck)
