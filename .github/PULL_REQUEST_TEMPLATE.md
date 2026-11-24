@@ -5,7 +5,9 @@ The PR title is a Conventional Commit, checked by CI, and becomes the merge
 commit's subject and the line in the release notes:
   feat(device): honour the slow_down error
   fix(storage)!: key stored tokens by issuer and client id
-Mark a breaking API change with `!` and describe it under "Breaking changes".
+The module is v1: a breaking API change cannot be released without a v2, so
+open an issue before making one, mark it with `!` and describe it under
+"Breaking changes".
 -->
 
 ## What & why
@@ -16,7 +18,7 @@ Mark a breaking API change with `!` and describe it under "Breaking changes".
 
 - [ ] Bug fix
 - [ ] Feature
-- [ ] Breaking change (exported API or behaviour; `!` in the title, details below)
+- [ ] Breaking change (exported API or behaviour; needs a v2, see CONTRIBUTING.md; `!` in the title, details below)
 - [ ] Refactor / internal
 - [ ] Docs / tooling / CI
 - [ ] Dependency update

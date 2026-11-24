@@ -68,10 +68,14 @@ CONTRIBUTING.md § 6 the full list. A change that weakens one is refused, not di
 
 ## Public API
 
-- Pre-1.0, but importers depend on it: a change an importer must react to (a removed or
-  renamed identifier, a changed signature, different default behaviour) is marked with `!`
-  in the commit and PR title and carries a `BREAKING CHANGE:` footer saying what to change
-  (CONTRIBUTING.md § 8).
+- v1 is a compatibility promise (semantic versioning): code that builds against an earlier
+  v1 keeps building and behaving the same. No exported identifier is removed or renamed,
+  no signature changes, no default gets stricter in a way importers must react to. Grow
+  the API instead: a new option, a new function, a new field. A change that cannot be made
+  compatibly waits for a v2 (a new module path, `/v2`); propose it in an issue first. If
+  one is ever needed, it is marked with `!` and a `BREAKING CHANGE:` footer
+  (CONTRIBUTING.md § 8). Deprecate with a `// Deprecated:` paragraph that names the
+  replacement, and keep the old identifier working.
 - Every exported identifier has a doc comment saying what the caller can rely on (revive
   enforces it). Configuration is a functional option (`auth.WithXxx`), validated once in
   `NewClient`.
