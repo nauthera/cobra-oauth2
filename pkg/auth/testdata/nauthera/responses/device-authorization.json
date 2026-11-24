@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "header": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+  "body": {
+    "device_code": "REDACTED-256-bit-device-code",
+    "user_code": "WDJB-MJHT",
+    "verification_uri": "{{base}}/device",
+    "verification_uri_complete": "{{base}}/device?user_code=WDJB-MJHT",
+    "expires_in": 900,
+    "interval": 5
+  }
+}

@@ -1,49 +1,60 @@
 package storage
 
 import (
+	"context"
 	"sync"
-
-	"github.com/golang-jwt/jwt"
 )
 
-// In-memory storage provider for testing purposes.
-// Uses a mutex to be thread-safe.
-type memoryStorageProvider struct {
-	service string
-	mutex   sync.Mutex
-	token   string
+type memoryProvider struct {
+	mu     sync.Mutex
+	tokens map[Key]*Token
 }
 
-func NewMemoryStorage(service string) StorageProvider {
-	return &memoryStorageProvider{
-		mutex:   sync.Mutex{},
-		service: service,
-		token:   "",
+// NewMemory returns a Provider that keeps token sets in process memory. They
+// are gone when the process exits, which suits tests and one-shot CI jobs.
+func NewMemory() Provider {
+	return &memoryProvider{tokens: make(map[Key]*Token)}
+}
+
+// Get implements Provider.
+func (m *memoryProvider) Get(_ context.Context, key Key) (*Token, error) {
+	if err := key.Validate(); err != nil {
+		return nil, err
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	tok, ok := m.tokens[key]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	return tok.Clone(), nil
 }
 
-// DeleteToken implements StorageProvider.
-func (m *memoryStorageProvider) DeleteToken() error {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	m.token = ""
+// Set implements Provider.
+func (m *memoryProvider) Set(_ context.Context, key Key, token *Token) error {
+	if err := key.Validate(); err != nil {
+		return err
+	}
+	// Round-trip through the record format so memory behaves like the
+	// persistent providers (version stamped, key copied in, Extra dropped).
+	data, err := encodeRecord(key, token)
+	if err != nil {
+		return err
+	}
+	rec, err := decodeRecord(key, data)
+	if err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.tokens[key] = rec
 	return nil
 }
 
-// GetToken implements StorageProvider.
-func (m *memoryStorageProvider) GetToken() (string, error) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	if m.token != "" {
-		return m.token, nil
-	}
-	return "", ErrTokenNotFound
-}
-
-// SetToken implements StorageProvider.
-func (m *memoryStorageProvider) SetToken(token jwt.Token) error {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	m.token = token.Raw
+// Delete implements Provider.
+func (m *memoryProvider) Delete(_ context.Context, key Key) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.tokens, key)
 	return nil
 }

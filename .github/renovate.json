@@ -1,0 +1,9 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "Renovate is switched off in this repository on purpose. Dependabot proposes every dependency update here, and .github/dependabot.yml is the dependency policy: which manifests move, grouped how, how often and after what cooldown, with Conventional Commit messages the release notes understand.",
+    "Run beside Dependabot, Renovate duplicates every update as an ungrouped pull request of its own, with commit subjects ('Update module ...') that the conventional-commits check refuses, and applies none of that policy. This matches nauthera-server, which made the same choice.",
+    "Keep this file. With no repository configuration Renovate falls back to the organisation's defaults, which is how it came to run here."
+  ],
+  "enabled": false
+}

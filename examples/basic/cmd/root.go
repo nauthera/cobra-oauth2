@@ -19,52 +19,110 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
+// Package cmd is a small CLI that signs in to any OpenID Connect provider
+// and calls its UserInfo endpoint with the
+// access token.
+//
+// Configure it with environment variables:
+//
+//	EXAMPLE_ISSUER     the issuer URL, e.g. https://auth.example.com
+//	EXAMPLE_CLIENT_ID  a public client registered with the device grant and
+//	                   the loopback redirect URI http://127.0.0.1/callback
 package cmd
 
 import (
-	"net/url"
+	"context"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
 
-	"github.com/nauthera/cobra-oauth2/pkg/auth"
-	"github.com/nauthera/cobra-oauth2/pkg/storage"
 	"github.com/spf13/cobra"
+
+	"github.com/nauthera/cobra-oauth2/pkg/auth"
 )
 
-const CLIENT_ID = "my-client-id"
-
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use:   "cobra-oauth2",
-	Short: "A simple CLI tool to demonstrate OAuth2 login and token retrieval.",
+	Use:          "basic",
+	Short:        "Sign in with OAuth 2.0 / OpenID Connect and call an API",
+	SilenceUsage: true,
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute runs the root command. It is called by main.main.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.ExecuteContext(context.Background()); err != nil {
 		os.Exit(1)
 	}
 }
 
+// options are shared by every command. They do no I/O: discovery happens
+// when a command runs, so --help works offline.
+func options() []auth.Option {
+	return []auth.Option{
+		auth.WithIssuer(os.Getenv("EXAMPLE_ISSUER")),
+		// offline_access asks for a refresh token, so the CLI stays signed
+		// in. A provider preset (auth.Nauthera, auth.Okta, ...) sets this.
+		auth.WithScopes("openid", "offline_access"),
+		auth.WithClientID(os.Getenv("EXAMPLE_CLIENT_ID")),
+		auth.WithQRCode(true),
+		// Bind the tokens to a key this CLI holds (DPoP) when the server
+		// advertises it. A stolen token is then useless without the key.
+		// The userinfo command below works either way: Client.Transport
+		// adds the proofs.
+		auth.WithDPoPAuto(),
+	}
+}
+
 func init() {
-	discoveryUrl, err := url.Parse("https://example.nauthera.io/.well-known/openid-configuration")
-	if err != nil {
-		rootCmd.PrintErr("error parsing discovery URL: ", err)
-		return
-	}
+	opts := options()
 
-	storageProvider := storage.NewKeyringStorage(CLIENT_ID)
-
-	options := []auth.Option{
-		auth.WithDiscoveryURL(*discoveryUrl),
-		auth.WithClientID(CLIENT_ID),
-		auth.WithStorageProvider(storageProvider),
-	}
-
+	// login, logout, token and status at the top level ...
 	rootCmd.AddCommand(
-		auth.NewLoginCommand(options...),
-		auth.NewTokenCommand(options...),
-		auth.NewLogoutCommand(options...),
+		auth.NewLoginCommand(opts...),
+		auth.NewLogoutCommand(opts...),
+		auth.NewTokenCommand(opts...),
+		auth.NewStatusCommand(opts...),
 	)
+	// ... or grouped under "auth": basic auth login.
+	rootCmd.AddCommand(auth.NewAuthCommand(opts...))
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "userinfo",
+		Short: "Call the provider's UserInfo endpoint with the stored token",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			// The same defaults as the commands above, so this reads the
+			// token the login command stored.
+			client, err := auth.NewClientForCommand(cmd, opts...)
+			if err != nil {
+				return err
+			}
+			md, err := client.Metadata(cmd.Context())
+			if err != nil {
+				return err
+			}
+			if md.UserinfoEndpoint == "" {
+				return fmt.Errorf("the provider has no userinfo endpoint")
+			}
+			// The transport adds the access token and refreshes it when
+			// needed.
+			hc := &http.Client{Transport: client.Transport(nil)}
+			req, err := http.NewRequestWithContext(cmd.Context(), http.MethodGet, md.UserinfoEndpoint, http.NoBody)
+			if err != nil {
+				return err
+			}
+			resp, err := hc.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("userinfo: %s", resp.Status)
+			}
+			_, err = io.Copy(cmd.OutOrStdout(), io.LimitReader(resp.Body, 1<<20))
+			return err
+		},
+	})
 }

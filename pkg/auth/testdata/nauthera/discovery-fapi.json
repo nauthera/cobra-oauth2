@@ -1,0 +1,90 @@
+{
+  "issuer": "{{issuer}}",
+  "authorization_endpoint": "{{base}}/authorize",
+  "token_endpoint": "{{base}}/token",
+  "jwks_uri": "{{base}}/.well-known/jwks.json",
+  "userinfo_endpoint": "{{base}}/userinfo",
+  "introspection_endpoint": "{{base}}/introspect",
+  "revocation_endpoint": "{{base}}/revoke",
+  "end_session_endpoint": "{{base}}/end_session",
+  "device_authorization_endpoint": "{{base}}/device_authorization",
+  "pushed_authorization_request_endpoint": "{{base}}/par",
+  "require_pushed_authorization_requests": true,
+  "request_uri_parameter_supported": true,
+  "request_parameter_supported": false,
+  "response_types_supported": [
+    "code"
+  ],
+  "response_modes_supported": [
+    "query"
+  ],
+  "subject_types_supported": [
+    "public"
+  ],
+  "id_token_signing_alg_values_supported": [
+    "ES256"
+  ],
+  "userinfo_signing_alg_values_supported": [
+    "ES256"
+  ],
+  "scopes_supported": [
+    "openid",
+    "profile",
+    "email",
+    "offline_access"
+  ],
+  "grant_types_supported": [
+    "authorization_code",
+    "refresh_token",
+    "client_credentials",
+    "urn:ietf:params:oauth:grant-type:device_code"
+  ],
+  "code_challenge_methods_supported": [
+    "S256"
+  ],
+  "token_endpoint_auth_methods_supported": [
+    "client_secret_basic",
+    "client_secret_post",
+    "none"
+  ],
+  "revocation_endpoint_auth_methods_supported": [
+    "client_secret_basic",
+    "client_secret_post",
+    "none"
+  ],
+  "introspection_endpoint_auth_methods_supported": [
+    "client_secret_basic",
+    "client_secret_post",
+    "none"
+  ],
+  "claims_supported": [
+    "sub",
+    "iss",
+    "aud",
+    "exp",
+    "iat",
+    "auth_time",
+    "acr",
+    "amr",
+    "email",
+    "email_verified",
+    "name"
+  ],
+  "acr_values_supported": [
+    "aal1",
+    "aal2",
+    "aal3"
+  ],
+  "authorization_response_iss_parameter_supported": true,
+  "claims_parameter_supported": true,
+  "tls_client_certificate_bound_access_tokens": false,
+  "dpop_signing_alg_values_supported": [
+    "ES256",
+    "PS256",
+    "PS384",
+    "PS512",
+    "RS256",
+    "RS384",
+    "RS512"
+  ]
+}

@@ -1,0 +1,2 @@
+{"status": 503, "header": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+ "body": {"error": "temporarily_unavailable", "error_description": "This grant type is not available.", "error_uri": "https://nauthera.io/runbooks/oauth/temporarily_unavailable"}}

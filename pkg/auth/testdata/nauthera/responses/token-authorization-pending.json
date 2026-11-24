@@ -1,0 +1,2 @@
+{"status": 400, "header": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+ "body": {"error": "authorization_pending", "error_description": "The user has not yet completed the authorization.", "error_uri": "https://nauthera.io/runbooks/oauth/authorization_pending"}}

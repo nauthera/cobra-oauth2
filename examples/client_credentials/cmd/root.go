@@ -19,55 +19,61 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
+
+// Package cmd is a small CLI for a confidential client, such as a CI job,
+// that obtains tokens with the client credentials grant.
+//
+// Configure it with environment variables; never compile a client secret
+// into a binary you distribute:
+//
+//	EXAMPLE_ISSUER         the issuer URL, e.g. https://auth.example.com
+//	EXAMPLE_CLIENT_ID      a confidential client with the client_credentials grant
+//	EXAMPLE_CLIENT_SECRET  its secret
+//	EXAMPLE_SCOPES         optional, space-separated scopes to request
 package cmd
 
 import (
-	"net/url"
+	"context"
 	"os"
+	"strings"
+
+	"github.com/spf13/cobra"
 
 	"github.com/nauthera/cobra-oauth2/pkg/auth"
 	"github.com/nauthera/cobra-oauth2/pkg/storage"
-	"github.com/spf13/cobra"
 )
 
-const CLIENT_ID = "my-client-id"
-const CLIENT_SECRET = "my-client-secret"
-
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use:   "cobra-oauth2",
-	Short: "A simple CLI tool to demonstrate OAuth2 login and token retrieval.",
+	Use:          "client-credentials",
+	Short:        "Obtain access tokens with the client credentials grant",
+	SilenceUsage: true,
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+// Execute runs the root command. It is called by main.main.
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	if err := rootCmd.ExecuteContext(context.Background()); err != nil {
 		os.Exit(1)
 	}
 }
 
 func init() {
-	discoveryUrl, err := url.Parse("https://example.nauthera.io/.well-known/openid-configuration")
-	if err != nil {
-		rootCmd.PrintErr("error parsing discovery URL: ", err)
-		return
+	opts := []auth.Option{
+		auth.WithIssuer(os.Getenv("EXAMPLE_ISSUER")),
+		auth.WithClientID(os.Getenv("EXAMPLE_CLIENT_ID")),
+		auth.WithClientSecret(os.Getenv("EXAMPLE_CLIENT_SECRET")),
+		auth.WithFlow(auth.FlowClientCredentials),
+		// A CI job has no keyring and needs no persistence: the token
+		// command fetches a new token whenever the stored one is missing or
+		// expired.
+		auth.WithStorage(storage.NewMemory()),
 	}
-
-	storageProvider := storage.NewKeyringStorage(CLIENT_ID)
-
-	options := []auth.Option{
-		auth.WithDiscoveryURL(*discoveryUrl),
-		auth.WithGrantType(auth.ClientCredentials), // Use the client credentials grant type
-		auth.WithClientID(CLIENT_ID),
-		auth.WithClientSecret(CLIENT_SECRET),
-		auth.WithStorageProvider(storageProvider),
+	if scopes := strings.Fields(os.Getenv("EXAMPLE_SCOPES")); len(scopes) > 0 {
+		opts = append(opts, auth.WithScopes(scopes...))
 	}
-
 	rootCmd.AddCommand(
-		auth.NewLoginCommand(options...),
-		auth.NewTokenCommand(options...),
-		auth.NewLogoutCommand(options...),
+		auth.NewLoginCommand(opts...),
+		auth.NewTokenCommand(opts...),
+		auth.NewLogoutCommand(opts...),
 	)
 }

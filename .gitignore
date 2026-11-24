@@ -64,4 +64,25 @@ Temporary Items
 
 # End of https://www.toptal.com/developers/gitignore/api/macos
 
+### Project ###
+# Coverage output (`just cover`, `just test-race-cover`, CI).
+coverage.out
 coverage.txt
+coverage.html
+*.coverprofile
+
+# Build output.
+/bin/
+/dist/
+
+# Local environment, e.g. the NAUTHERA_E2E_* settings for `just e2e`.
+# Commit an example as .env.example if one helps.
+.env
+.env.*
+!.env.example
+
+# The agent rules CLAUDE.md links are tracked, even where a global ignore
+# hides .claude/; local agent state (settings.local.json, worktrees) is not.
+!.claude/
+.claude/*
+!.claude/rules/

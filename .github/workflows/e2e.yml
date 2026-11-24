@@ -1,0 +1,52 @@
+name: e2e
+
+# The live tests (e2e/, `just e2e`) against nauthera-server, on every push to
+# main and on demand. Never on pull requests: a fork's pull request gets no
+# secrets, and the tests share one organization at the server.
+#
+# The organization and its clients are declared in nauthera/gitops
+# (apps/cobra-oauth2-e2e); `scripts/seal-tokens.sh cobra-oauth2-e2e` there
+# sets the variables and the secret below. Without NAUTHERA_E2E_ISSUER the job
+# is skipped, so a fork or a fresh clone stays green.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  # A nightly run, for when outside contributions make main move often:
+  # schedule:
+  #   - cron: "17 3 * * *"
+
+permissions:
+  contents: read
+
+# One run at a time: the tests sign in, refresh and revoke in one shared
+# organization, and two runs would only make each other's failures harder to
+# read. A queued run waits instead of cancelling the running one.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  nauthera:
+    name: live tests against nauthera-server
+    if: vars.NAUTHERA_E2E_ISSUER != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NAUTHERA_E2E_ISSUER: ${{ vars.NAUTHERA_E2E_ISSUER }}
+      NAUTHERA_E2E_CLIENT_ID: ${{ vars.NAUTHERA_E2E_CLIENT_ID }}
+      NAUTHERA_E2E_SERVICE_CLIENT_ID: ${{ vars.NAUTHERA_E2E_SERVICE_CLIENT_ID }}
+      NAUTHERA_E2E_CLIENT_SECRET: ${{ secrets.NAUTHERA_E2E_CLIENT_SECRET }}
+      # Optional: a test user created by hand in the organization enables the
+      # automated device approval and denial tests; they skip without it.
+      NAUTHERA_E2E_USER_EMAIL: ${{ vars.NAUTHERA_E2E_USER_EMAIL }}
+      NAUTHERA_E2E_USER_PASSWORD: ${{ secrets.NAUTHERA_E2E_USER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - name: go test -tags e2e ./e2e/...
+        run: go test -tags e2e -count=1 -v -timeout 15m ./e2e/...

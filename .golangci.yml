@@ -1,0 +1,173 @@
+# golangci-lint configuration (v2 schema).
+# Docs: https://golangci-lint.run/usage/configuration/
+#
+# Adapted from nauthera-server's: the same security-grade baseline, minus the
+# rules that only make sense for a server (SQL, logging pipeline, metrics, its
+# own analyzers). Pin the binary to the version CI installs
+# (GOLANGCI_LINT_VERSION in .github/workflows/ci.yml; `just install-tools`).
+version: "2"
+
+run:
+  # run.go is left to go.mod's go directive: this is a library, and the
+  # oldest Go it supports is the one to lint for.
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+  # The live tests in ./e2e are behind this tag; lint them too.
+  build-tags:
+    - e2e
+
+linters:
+  # Start from an empty set and turn on exactly what we want.
+  default: none
+  enable:
+    - errcheck       # unchecked errors
+    - govet          # suspicious constructs
+    - staticcheck    # broad correctness/style analysis
+    - revive         # doc comments, naming, error strings
+    - gosec          # security issues
+    - errorlint      # correct error wrapping / comparisons
+    - bodyclose      # http.Response.Body must be closed
+    - noctx          # no HTTP request without a context
+    - gocritic       # opinionated diagnostics
+    - ineffassign    # ineffectual assignments
+    - unused         # unused code
+    - misspell       # commonly misspelled English words
+    - depguard       # packages this module must not import
+    - forbidigo      # library code writes to the writer it was given
+    - errname        # error types named XxxError, sentinels ErrXxx
+    - nilerr         # returning nil after checking err != nil
+    - nolintlint     # every //nolint names its linter and says why
+    - usestdlibvars  # http.MethodPost, http.StatusOK, not literals
+    - usetesting     # t.Context, t.TempDir, t.Setenv in tests
+    - copyloopvar    # pre-1.22 loop variable copies
+    - gocheckcompilerdirectives # malformed //go: directives
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      # `_ = f()` is an accepted, deliberate way to ignore an error (a Close on
+      # a response body already read, say).
+      check-blank: false
+    depguard:
+      rules:
+        main:
+          list-mode: lax
+          deny:
+            - pkg: io/ioutil
+              desc: deprecated; use io and os
+            - pkg: github.com/pkg/errors
+              desc: use the standard library's errors and fmt.Errorf with %w
+            - pkg: github.com/golang-jwt/jwt$
+              desc: the +incompatible v3 line is unmaintained; use github.com/golang-jwt/jwt/v5
+            - pkg: math/rand$
+              desc: state, nonces and PKCE verifiers come from crypto/rand
+            - pkg: math/rand/v2$
+              desc: state, nonces and PKCE verifiers come from crypto/rand
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment # noisy for option/config structs
+        - shadow         # `if err := f(); …` shadowing is idiomatic Go, not a bug
+    staticcheck:
+      checks:
+        - all
+    revive:
+      severity: warning
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+          arguments:
+            - allowTypesBefore: "*testing.T" # t is conventionally first in test helpers
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: package-comments
+        - name: increment-decrement
+        - name: indent-error-flow
+        - name: range
+        - name: receiver-naming
+        - name: superfluous-else
+        - name: time-naming
+        - name: unexported-return
+        - name: unreachable-code
+        - name: var-declaration
+        - name: var-naming
+        - name: errorf
+        - name: import-alias-naming
+        - name: unexported-naming
+    gosec:
+      excludes:
+        - G115 # integer overflow conversion: too noisy, handled case-by-case
+      config:
+        global:
+          audit: true
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+      disabled-checks:
+        - whyNoLint      # nolintlint covers it
+        - hugeParam
+        - rangeValCopy
+        - unnamedResult
+        - importShadow
+        - builtinShadow
+    misspell:
+      locale: US
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    forbidigo:
+      analyze-types: true
+      forbid:
+        - pattern: ^(fmt\.Print(f|ln)?|print|println)$
+          msg: library code writes to the io.Writer it was given (the cobra command's OutOrStdout/ErrOrStderr)
+        - pattern: ^log\.(Print|Fatal|Panic)(f|ln)?$
+          msg: no global logging from a library; return an error or write to the configured writer
+
+  exclusions:
+    generated: lax
+    presets:
+      # `comments` is deliberately not listed: it would silence revive's
+      # exported-identifier doc comment checks, which this library keeps.
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      # Relax security/style checks inside tests.
+      - path: _test\.go
+        linters:
+          - gosec
+          - bodyclose
+          - noctx
+          - errcheck
+      # The examples are programs: printing to stdout is their interface.
+      - path: ^examples/
+        linters:
+          - forbidigo
+    paths:
+      - third_party$
+      - builtin$
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    gofumpt:
+      module-path: github.com/nauthera/cobra-oauth2
+      # Group adjacent parameters of the same type: func(a, b int).
+      extra:
+        group-params: true
+    goimports:
+      local-prefixes:
+        - github.com/nauthera/cobra-oauth2

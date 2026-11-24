@@ -1,0 +1,15 @@
+# CODEOWNERS for cobra-oauth2.
+#
+# One owner for the whole module while it is small; split by path (pkg/auth,
+# pkg/storage, .github) once there is more than one reviewer to route to.
+# @michaelbeutler is a placeholder, as in nauthera-server: replace it with
+# the relevant team handle (e.g. @nauthera/maintainers) once teams are set up.
+# Last matching rule wins.
+
+*                   @michaelbeutler
+
+# Supply chain: workflows, dependency policy and the scripts CI runs.
+/.github/           @michaelbeutler
+/scripts/           @michaelbeutler
+/go.mod             @michaelbeutler
+/go.sum             @michaelbeutler

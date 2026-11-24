@@ -1,0 +1,48 @@
+name: Feature request
+description: Propose a new capability or improvement.
+labels: [enhancement]
+type: Task
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What are you trying to do that isn't possible or is awkward today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to see? Reference the relevant standard (RFC / OpenID spec, section) where applicable.
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Authorization server(s)
+      description: Which providers need this, if it is provider-specific?
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Device authorization grant
+        - Authorization code + PKCE
+        - Client credentials
+        - Token refresh / revocation
+        - Discovery / provider compatibility
+        - Token storage
+        - Cobra commands / CLI output
+        - Developer experience / docs
+        - Other
+    validations:
+      required: true
