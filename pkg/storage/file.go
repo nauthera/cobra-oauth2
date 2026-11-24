@@ -69,6 +69,12 @@ func (f *fileProvider) Get(_ context.Context, key Key) (*Token, error) {
 	file, err := os.Open(p)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
+			// Windows reports a path below a regular file as not found where
+			// Unix says "not a directory"; a misconfigured directory is an
+			// error on every platform, not an empty store.
+			if info, statErr := os.Stat(f.dir); statErr == nil && !info.IsDir() {
+				return nil, fmt.Errorf("token directory %s: not a directory", f.dir)
+			}
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("open token file: %w", err)
