@@ -193,8 +193,8 @@ func oauthError(w http.ResponseWriter, status int, code string) {
 	writeJSONResponse(w, status, map[string]string{"error": code, "error_description": "test " + code})
 }
 
-// testClient returns a Client for as with memory storage, the fake clock,
-// no browser, and its output captured.
+// testEnv is a Client for a fake server with its storage, clock and captured
+// output, for assertions on each.
 type testEnv struct {
 	client *Client
 	clock  *fakeClock
@@ -203,6 +203,8 @@ type testEnv struct {
 	errOut *bytes.Buffer
 }
 
+// newTestEnv returns a Client for as with memory storage, the fake clock,
+// no browser, and its output captured.
 func newTestEnv(t *testing.T, as *fakeAS, opts ...Option) *testEnv {
 	t.Helper()
 	env := &testEnv{clock: newFakeClock(), store: storage.NewMemory(), out: &bytes.Buffer{}, errOut: &bytes.Buffer{}}

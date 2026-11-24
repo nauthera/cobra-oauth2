@@ -190,10 +190,8 @@ func (cfg *config) validate() error {
 	if cfg.redirectPort < 0 || cfg.redirectPort > 65535 {
 		return configErr("redirect port %d out of range", cfg.redirectPort)
 	}
-	if cfg.providerName == "cognito" && cfg.flow == FlowBrowser && cfg.redirectPort == 0 {
-		// Cognito compares callback URLs exactly, port included, so a
-		// random port fails every login with a redirect mismatch.
-		return configErr("Cognito needs a fixed redirect port: set WithRedirectPort to the port of the callback URL registered for the app client")
+	if cfg.exactRedirectPort && cfg.flow == FlowBrowser && cfg.redirectPort == 0 {
+		return configErr("%s matches callback URLs exactly, port included: set WithRedirectPort to the port of the registered callback URL", cfg.providerName)
 	}
 	if !strings.HasPrefix(cfg.redirectPath, "/") || strings.ContainsAny(cfg.redirectPath, "?#") {
 		return configErr("redirect path %q must start with / and have no query or fragment", cfg.redirectPath)

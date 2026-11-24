@@ -102,6 +102,10 @@ type config struct {
 	clientSecret  string
 	authMethod    ClientAuthMethod
 	authenticator ClientAuthenticator
+	// exactRedirectPort makes the browser flow require WithRedirectPort:
+	// the provider matches callback URLs exactly, port included, so an
+	// ephemeral port would fail every login (Cognito).
+	exactRedirectPort bool
 	// deviceClientIDOnly sends only client_id to the device authorization
 	// endpoint, for providers that authenticate the client at the token
 	// endpoint only (GitHub, Google).

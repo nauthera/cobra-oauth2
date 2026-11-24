@@ -253,6 +253,7 @@ func Cognito(region, userPoolID, domain string) Option {
 		if c.flow == FlowAuto {
 			c.flow = FlowBrowser
 		}
+		c.exactRedirectPort = true
 		presetScopes(c, "openid", "profile")
 	})
 }
