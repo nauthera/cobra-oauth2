@@ -91,16 +91,15 @@ func (c *Client) BrowserLogin(ctx context.Context) (*storage.Token, error) {
 		}
 	}
 
-	ln, err := c.listenLoopback(ctx)
+	lns, port, err := c.listenLoopback(ctx)
 	if err != nil {
 		return nil, err
 	}
-	addr, ok := ln.Addr().(*net.TCPAddr)
-	if !ok {
-		_ = ln.Close()
-		return nil, fmt.Errorf("loopback listener has unexpected address %s", ln.Addr())
+	closeAll := func() {
+		for _, ln := range lns {
+			_ = ln.Close()
+		}
 	}
-	port := addr.Port
 	redirectURI := "http://" + c.cfg.redirectHost + ":" + strconv.Itoa(port) + c.cfg.redirectPath
 
 	authURL, err := c.authorizationURL(ctx, md, authRequest{
@@ -108,7 +107,7 @@ func (c *Client) BrowserLogin(ctx context.Context) (*storage.Token, error) {
 		challenge: pkceChallenge(verifier), scopes: scopes, dpop: key,
 	})
 	if err != nil {
-		_ = ln.Close()
+		closeAll()
 		return nil, err
 	}
 
@@ -123,8 +122,10 @@ func (c *Client) BrowserLogin(ctx context.Context) (*storage.Token, error) {
 		// by default; send them to the configured logger instead.
 		ErrorLog: slog.NewLogLogger(c.logger().Handler(), slog.LevelDebug),
 	}
-	serveErr := make(chan error, 1)
-	go func() { serveErr <- srv.Serve(ln) }()
+	serveErr := make(chan error, len(lns))
+	for _, ln := range lns {
+		go func() { serveErr <- srv.Serve(ln) }()
+	}
 	defer func() {
 		shutdownCtx, done := context.WithTimeout(context.WithoutCancel(ctx), 2*time.Second)
 		defer done()
@@ -156,21 +157,80 @@ func (c *Client) BrowserLogin(ctx context.Context) (*storage.Token, error) {
 	return c.exchangeCode(ctx, md, res.code, redirectURI, verifier, nonce, strings.Join(scopes, " "), key)
 }
 
-// listenLoopback binds the redirect listener to a loopback address only.
-func (c *Client) listenLoopback(ctx context.Context) (net.Listener, error) {
-	host := c.cfg.redirectHost
-	switch host {
-	case "localhost":
-		host = "127.0.0.1"
-	case "[::1]":
-		host = "::1"
-	}
+// localhostListenAttempts bounds how often an ephemeral port is picked anew
+// when its IPv6 twin is taken.
+const localhostListenAttempts = 5
+
+// listenLoopback binds the redirect listeners to loopback addresses only
+// and returns them with their common port.
+//
+// For "localhost" the browser may connect to 127.0.0.1 or to ::1 (most
+// prefer IPv6), so both are bound on the same port. Binding only one would
+// leave the other free for any local process, of any user, to listen on and
+// receive the authorization response, state and code included
+// (RFC 8252 § 8.3). Where ::1 is not configured at all, no one can bind
+// it and 127.0.0.1 alone suffices.
+func (c *Client) listenLoopback(ctx context.Context) ([]net.Listener, int, error) {
 	var lc net.ListenConfig
-	ln, err := lc.Listen(ctx, "tcp", net.JoinHostPort(host, strconv.Itoa(c.cfg.redirectPort)))
-	if err != nil {
-		return nil, fmt.Errorf("listen for the browser redirect: %w", err)
+	listen := func(host string, port int) (net.Listener, int, error) {
+		ln, err := lc.Listen(ctx, "tcp", net.JoinHostPort(host, strconv.Itoa(port)))
+		if err != nil {
+			return nil, 0, err
+		}
+		addr, ok := ln.Addr().(*net.TCPAddr)
+		if !ok {
+			_ = ln.Close()
+			return nil, 0, fmt.Errorf("loopback listener has unexpected address %s", ln.Addr())
+		}
+		return ln, addr.Port, nil
 	}
-	return ln, nil
+	single := func(host string) ([]net.Listener, int, error) {
+		ln, port, err := listen(host, c.cfg.redirectPort)
+		if err != nil {
+			return nil, 0, fmt.Errorf("listen for the browser redirect: %w", err)
+		}
+		return []net.Listener{ln}, port, nil
+	}
+	switch c.cfg.redirectHost {
+	case "[::1]":
+		return single("::1")
+	case "localhost":
+	default:
+		return single("127.0.0.1")
+	}
+
+	var lastErr error
+	for range localhostListenAttempts {
+		ln4, port, err := listen("127.0.0.1", c.cfg.redirectPort)
+		if err != nil {
+			return nil, 0, fmt.Errorf("listen for the browser redirect: %w", err)
+		}
+		ln6, _, err := listen("::1", port)
+		if err == nil {
+			return []net.Listener{ln4, ln6}, port, nil
+		}
+		if !ipv6LoopbackAvailable(ctx) {
+			return []net.Listener{ln4}, port, nil
+		}
+		_ = ln4.Close()
+		lastErr = err
+		if c.cfg.redirectPort != 0 {
+			break
+		}
+	}
+	return nil, 0, fmt.Errorf("listen for the browser redirect: the port is taken on ::1, "+
+		"where the browser may send the redirect for localhost: %w", lastErr)
+}
+
+// ipv6LoopbackAvailable reports whether ::1 can be bound at all.
+func ipv6LoopbackAvailable(ctx context.Context) bool {
+	var lc net.ListenConfig
+	ln, err := lc.Listen(ctx, "tcp", "[::1]:0")
+	if err != nil {
+		return false
+	}
+	_ = ln.Close()
+	return true
 }
 
 // authRequest holds the per-login values of an authorization request.

@@ -179,7 +179,8 @@ func (cfg *config) validate() error {
 			return fmt.Errorf("%w: %w", ErrInvalidConfig, err)
 		}
 	}
-	switch strings.ToLower(cfg.redirectHost) {
+	cfg.redirectHost = strings.ToLower(cfg.redirectHost)
+	switch cfg.redirectHost {
 	case "127.0.0.1", "[::1]", "localhost":
 	case "::1":
 		cfg.redirectHost = "[::1]"
